@@ -1,0 +1,12 @@
+[project]
+name = "bk-menu-mcp"
+version = "0.1.0"
+description = "Minimal read-only MCP server over a Burger King menu Postgres database"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "asyncpg>=0.31.0",
+    "fastmcp>=3.4.7",
+    "python-dotenv>=1.2.3",
+    "sqlalchemy[asyncio]>=2.0.52",
+]

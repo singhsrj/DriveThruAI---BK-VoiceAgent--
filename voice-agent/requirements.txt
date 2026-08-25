@@ -1,0 +1,3 @@
+pipecat-ai[daily,webrtc,assemblyai,groq,cartesia,deepgram,mcp,silero,runner]==1.7.0
+python-dotenv>=1.0.0
+langcache>=0.13.0

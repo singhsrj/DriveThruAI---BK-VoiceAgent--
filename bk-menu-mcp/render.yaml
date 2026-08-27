@@ -1,0 +1,57 @@
+# Render Blueprint for bk-menu-mcp
+# https://render.com/docs/blueprint-spec
+#
+# Deploys the MCP server as a single web service on Render's native Python
+# runtime. Connects to your EXISTING external Postgres database (e.g.
+# Neon) via a connection string you provide -- this Blueprint does NOT
+# provision a new database.
+#
+# Usage:
+#   1. Commit this file to the repo root alongside server.py, db.py,
+#      models.py, pyproject.toml, uv.lock.
+#   2. In the Render dashboard: New -> Blueprint -> select this repo.
+#   3. Render prompts you for DATABASE_URL (since it's marked `sync: false`
+#      below) -- paste your existing Postgres connection string there.
+#   4. Your server is live at https://<service-name>.onrender.com/mcp
+#
+# Note: server.py's __main__ block binds 0.0.0.0 and reads the PORT env
+# var automatically when PORT is present in the environment (which Render
+# always sets) -- no code changes needed beyond what's already committed.
+
+services:
+  - type: web
+    name: bk-menu-mcp
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+
+    # `uv` isn't preinstalled on Render's Python image, so the build step
+    # installs it first, then uses it to install the locked dependency set.
+    buildCommand: pip install uv && uv sync --frozen
+    startCommand: uv run server.py
+
+    # FastMCP's streamable-HTTP transport serves at /mcp, not /. A bare
+    # GET without proper MCP session headers returns 400 rather than 200,
+    # but that 400 (not a connection failure) is what confirms the server
+    # is up -- Render's health check only cares that *some* HTTP response
+    # comes back on this path.
+    healthCheckPath: /mcp
+
+    autoDeployTrigger: commit
+
+    envVars:
+      # sync: false means Render does NOT store a value here -- it
+      # prompts you for one in the dashboard during Blueprint creation,
+      # and treats it as a secret from then on. Paste your existing
+      # Postgres connection string (Neon or otherwise) when asked.
+      # db.py accepts postgres:// or postgresql://, sslmode and all.
+      - key: DATABASE_URL
+        sync: false
+
+      # PORT is injected by Render automatically; not set here on purpose.
+      # MCP_HOST/MCP_PORT are also left unset so the code's Render-aware
+      # defaults (0.0.0.0 + $PORT) take over -- see server.py.
+
+# No `databases:` block -- we're using an existing external Postgres
+# instance, not provisioning a new Render-managed one.

@@ -314,8 +314,11 @@ async def get_menu_stats() -> dict:
 if __name__ == "__main__":
     import os
 
+    # Render (and most PaaS platforms) inject PORT and expect the service
+    # to bind 0.0.0.0. Fall back to MCP_HOST/MCP_PORT for local dev, where
+    # 127.0.0.1 is the safer default.
     mcp.run(
         transport="http",
-        host=os.environ.get("MCP_HOST", "127.0.0.1"),
-        port=int(os.environ.get("MCP_PORT", "8000")),
+        host=os.environ.get("MCP_HOST", "0.0.0.0" if "PORT" in os.environ else "127.0.0.1"),
+        port=int(os.environ.get("PORT", os.environ.get("MCP_PORT", "8000"))),
     )

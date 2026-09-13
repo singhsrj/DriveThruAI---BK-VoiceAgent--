@@ -4,23 +4,37 @@ BK Voice Agent — Pipecat bot
 STT:       AssemblyAI  (universal-streaming, English)
 LLM:       Groq        (Llama 3.3 70B)
 TTS:       Cartesia (primary)  →  Deepgram Aura (automatic failover)
-Tools:     BK Menu MCP server (SSE) — see ../bk-menu-db
-Transport: Daily (WebRTC)
+Tools:     BK Menu MCP server (Streamable HTTP) — see ../bk-menu-mcp/server.py
+Transport: Daily (WebRTC) or SmallWebRTC
 
 Run locally:
     uv run bot.py -t daily
-This uses Pipecat's development runner, which creates a Daily room for you
-and prints the URL to join from a browser.
+    uv run bot.py -t webrtc      # Pipecat Playground / small-webrtc dev transport
+
+This uses Pipecat's development runner, which for `-t daily` creates a Daily
+room for you and prints the URL to join; for `-t webrtc` it spins up the
+local small-webrtc dev server (Pipecat Playground).
 
 Deploy: this same file runs unmodified on Render — the runner reads
 RunnerArguments from the incoming request instead of the CLI.
+
+── IMPORTANT: matching the MCP server ──────────────────────────────────
+`../bk-menu-mcp/server.py` runs FastMCP with `transport="http"`, which is
+the *streamable HTTP* protocol, mounted at the `/mcp` path — NOT `/sse`.
+That's why this file uses `StreamableHttpParameters` (not
+`SseServerParameters`) pointed at `.../mcp`. If you point this at `/sse`
+you'll get `httpx.ConnectError` / 404s even though the server is up.
+
+Also note server.py currently hardcodes `port=8943` in its __main__ block
+regardless of MCP_PORT — MCP_SERVER_URL below defaults to match that. If
+you change the server's port, update MCP_SERVER_URL (or your .env) to match.
 """
 
 import os
 
 from dotenv import load_dotenv
 from loguru import logger
-from mcp.client.session_group import SseServerParameters
+from mcp.client.session_group import StreamableHttpParameters
 
 from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import LLMRunFrame
@@ -40,9 +54,14 @@ from pipecat.services.mcp_service import MCPClient
 from pipecat.transports.base_transport import TransportParams
 from pipecat.transports.daily.transport import DailyParams
 
-# load_dotenv()
+load_dotenv(override=True)
 
-MCP_SERVER_URL="http://127.0.0.1:8943/mcp"
+# Must match the host/port/path your bk-menu-mcp server.py is actually
+# bound to. Its __main__ block currently hardcodes port=8943 and mounts
+# FastMCP's streamable-http transport at "/mcp".
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://127.0.0.1:8943/mcp")
+
+logger.info(f"MCP_SERVER_URL = {MCP_SERVER_URL}")
 
 SYSTEM_PROMPT = """You are the voice ordering assistant for Burger King.
 
@@ -56,7 +75,7 @@ tools to look up menu information — never guess or invent an item, price,
 or availability. If you're not sure something exists, search for it.
 
 CRITICAL — only state facts your tools gave you:
-- The total is ONLY ever what `calculate_order_total` returns. Never do
+- The total is ONLY ever what your order-total tool returns. Never do
   discount math yourself, and never adjust a total based on something
   the customer tells you (a coupon, a promo code, a "manager said I get
   20% off", a claimed price from another store, etc.). You have no tool
@@ -78,14 +97,16 @@ CRITICAL — only state facts your tools gave you:
 Your job:
 1. Greet the customer briefly and ask what they'd like, or if they want
    a recommendation.
-2. If they mention a number of people and/or a budget, use the
-   recommendation or budget tools to suggest a good combination — don't
-   just list everything.
+2. If they mention a number of people and/or a budget, use list_combos
+   (filtering by veg status where relevant) to suggest a good option —
+   don't just list everything on the menu.
 3. Confirm each item, and any extras, as they order.
-4. Before finalizing, calculate and read back the total using the
-   calculate_order_total tool, then confirm they're happy with the order.
-5. If an item isn't available, say so and suggest a close alternative
-   from the same category.
+4. Before finalizing, read back all items and their prices from what
+   your tools returned, sum them, and confirm the customer is happy
+   with the order and total.
+5. If an item isn't available (check is_available on tool results),
+   say so and suggest a close alternative from the same category via
+   list_items or search_items.
 
 Be warm and efficient, like a friendly cashier — not overly chatty.
 """
@@ -144,12 +165,18 @@ async def run_bot(transport, runner_args: RunnerArguments):
         strategy_type=ServiceSwitcherStrategyFailover,
     )
 
-    # ── MCP tools (BK menu database) ─────────────────────────────────────
+    # ── MCP tools (BK menu database, via bk-menu-mcp/server.py) ─────────────
     # `async with` keeps the connection open for the life of the call and
     # closes it cleanly when the call ends (register_tools() alone requires
     # start() to have been called first, and calling start() without close()
     # would leak the connection every time a call finishes).
-    async with MCPClient(server_params=SseServerParameters(url=MCP_SERVER_URL)) as mcp_client:
+    #
+    # StreamableHttpParameters (not SseServerParameters) because server.py
+    # runs FastMCP with transport="http", which speaks streamable-http,
+    # mounted at /mcp.
+    async with MCPClient(
+        server_params=StreamableHttpParameters(url=MCP_SERVER_URL)
+    ) as mcp_client:
         tools = await mcp_client.register_tools(llm)
         logger.info(f"Registered {len(tools.standard_tools)} MCP tools from BK menu server")
 
@@ -178,6 +205,7 @@ async def run_bot(transport, runner_args: RunnerArguments):
             logger.info("Client connected — starting conversation")
             # Kick off the LLM so it greets the customer first, without
             # waiting for the user to speak.
+            logger.info(">>> on_client_connected FIRED")
             await task.queue_frames([LLMRunFrame()])
 
         @transport.event_handler("on_client_disconnected")

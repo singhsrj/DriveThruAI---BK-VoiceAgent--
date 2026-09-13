@@ -1,0 +1,11 @@
+[project]
+name = "bk-livekit-agent"
+version = "0.1.0"
+description = "BK voice ordering agent on LiveKit Agents"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "livekit-agents[assemblyai,groq,cartesia,deepgram,silero,mcp]~=1.5",
+    "loguru>=0.7.3",
+    "python-dotenv>=1.2.3",
+]

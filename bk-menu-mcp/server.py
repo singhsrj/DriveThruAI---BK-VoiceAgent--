@@ -320,5 +320,5 @@ if __name__ == "__main__":
     mcp.run(
         transport="http",
         host=os.environ.get("MCP_HOST", "0.0.0.0" if "PORT" in os.environ else "127.0.0.1"),
-        port=int(os.environ.get("PORT", os.environ.get("MCP_PORT", "8000"))),
+        port=8943,
     )

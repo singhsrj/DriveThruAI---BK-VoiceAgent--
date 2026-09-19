@@ -2,7 +2,7 @@
 BK Voice Agent — LiveKit Agents
 ─────────────────────────────────
 STT:       AssemblyAI  (universal-streaming, English)
-LLM:       Groq        (Llama 3.3 70B)
+LLM:       OpenRouter  (via OpenAI-compatible plugin; default anthropic/claude-sonnet-4.5)
 TTS:       Cartesia (primary)  →  Deepgram Aura (fallback, on TTS error)
 Tools:     BK Menu MCP server (streamable HTTP) — see ../bk-menu-mcp/server.py
 Transport: LiveKit (self-hosted server via Docker)
@@ -21,13 +21,13 @@ Setup (self-hosted LiveKit server):
     LIVEKIT_API_KEY=devkey
     LIVEKIT_API_SECRET=secret
     ASSEMBLYAI_API_KEY=...
-    GROQ_API_KEY=...
+    OPENROUTER_API_KEY=...
     CARTESIA_API_KEY=...
     DEEPGRAM_API_KEY=...
     MCP_SERVER_URL=http://127.0.0.1:8943/mcp   # optional, this is the default
 
 Install:
-    uv add "livekit-agents[assemblyai,groq,cartesia,deepgram,silero,mcp]~=1.5" \
+    uv add "livekit-agents[assemblyai,groq,openai,cartesia,deepgram,silero,mcp]~=1.5" \
         python-dotenv
 
 Run the agent:
@@ -49,21 +49,27 @@ path, so pointing MCP_SERVER_URL at ".../mcp" is both necessary and
 sufficient — no explicit transport_type needed.
 """
 
+import asyncio
+import json
 import os
+import uuid
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from loguru import logger
 
-from livekit import agents
+from livekit import agents, rtc
 from livekit.agents import (
     Agent,
     AgentSession,
     JobContext,
+    RunContext,
     WorkerOptions,
     cli,
+    function_tool,
     mcp,
 )
-from livekit.plugins import assemblyai, cartesia, deepgram, groq, silero
+from livekit.plugins import assemblyai, cartesia, deepgram, groq, openai, silero
 
 load_dotenv(override=True)
 
@@ -114,6 +120,13 @@ Your job:
 5. If an item isn't available (check is_available on tool results),
    say so and suggest a close alternative from the same category via
    list_items or search_items.
+6. Once the customer confirms they're happy with the order and total,
+   call the place_order tool with the final item list and total. This
+   is what ends the ordering conversation and shows their receipt, so
+   only call it once, after explicit confirmation — never call it
+   speculatively or before the customer has agreed to the full order.
+   After calling it, thank them and let them know their receipt is
+   ready, then say goodbye — don't keep the conversation going.
 
 Be warm and efficient, like a friendly cashier — not overly chatty.
 """
@@ -122,7 +135,12 @@ Be warm and efficient, like a friendly cashier — not overly chatty.
 class BKAgent(Agent):
     """The BK ordering assistant, wired to the bk-menu MCP server."""
 
-    def __init__(self) -> None:
+    # Topic the frontend listens on for the structured receipt payload.
+    # Kept as a class constant so bot.py and the frontend only need to
+    # agree on this string once.
+    ORDER_TOPIC = "bk-order-receipt"
+
+    def __init__(self, room: rtc.Room) -> None:
         super().__init__(
             instructions=SYSTEM_PROMPT,
             tools=[
@@ -132,6 +150,53 @@ class BKAgent(Agent):
                 )
             ],
         )
+        self._room = room
+        self.order_placed = False
+
+    @function_tool()
+    async def place_order(
+        self,
+        context: RunContext,
+        items: list[dict],
+        total: float,
+    ) -> dict:
+        """Finalize the order once the customer has explicitly confirmed
+        they're happy with everything and the total. Publishes the
+        receipt to the customer's screen and ends the ordering flow.
+        Only call this once, after confirmation -- never speculatively.
+
+        Args:
+            items: The final order line items. Each item should be a
+                dict with "name" (str), "quantity" (int), and "price"
+                (float, the line's total price from your tools -- e.g.
+                unit price times quantity, not just the unit price).
+            total: The final total price for the whole order, matching
+                the sum of each item's price. Must come from what your
+                tools returned -- never a customer-claimed or discounted
+                figure.
+        """
+        order_id = str(uuid.uuid4())[:8].upper()
+        receipt = {
+            "order_id": order_id,
+            "items": items,
+            "total": round(total, 2),
+            "placed_at": datetime.now(timezone.utc).isoformat(),
+        }
+        logger.info(f"Order placed: {receipt}")
+
+        try:
+            await self._room.local_participant.send_text(
+                json.dumps(receipt),
+                topic=self.ORDER_TOPIC,
+            )
+        except Exception:
+            # Don't let a frontend-delivery hiccup break the voice flow --
+            # the customer still hears confirmation even if the receipt
+            # card fails to render.
+            logger.exception("Failed to publish order receipt to frontend")
+
+        self.order_placed = True
+        return {"status": "confirmed", "order_id": order_id}
 
 
 async def entrypoint(ctx: JobContext) -> None:
@@ -162,17 +227,29 @@ async def entrypoint(ctx: JobContext) -> None:
             # via the model name itself.
             model="universal-streaming-english",
         ),
-        llm=groq.LLM(
-            api_key=os.getenv("GROQ_API_KEY"),
-            # llama-3.3-70b-versatile was deprecated by Groq (decommissioned
-            # Aug 2026 on free/developer tiers).
-            model=os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b"),
+        # OpenRouter, via the OpenAI-compatible plugin's convenience
+        # method. Switched from Groq after hitting Groq's free-tier
+        # input-tokens-per-minute rate limit mid-conversation (MCP tool
+        # results pushed a single request over the 7000 ITPM cap).
+        # OPENROUTER_MODEL examples: "anthropic/claude-sonnet-4.5",
+        # "openai/gpt-4o-mini", "qwen/qwen3.8-27b" (also available on
+        # OpenRouter, separate quota from Groq's).
+        llm=openai.LLM.with_openrouter(
+            model='upstage/solar-pro4',
             temperature=0.4,
         ),
+        # To go back to Groq directly instead, comment the block above
+        # and uncomment this:
+        # llm=groq.LLM(
+        #     api_key=os.getenv("GROQ_API_KEY"),
+        #     model=os.getenv("GROQ_MODEL", "qwen/qwen3.8-27b"),
+        #     temperature=0.4,
+        # ),
         tts=tts,
     )
 
-    await session.start(agent=BKAgent(), room=ctx.room)
+    agent = BKAgent(room=ctx.room)
+    await session.start(agent=agent, room=ctx.room)
 
     # Kick things off so the bot greets the customer first, without
     # waiting for them to speak.
@@ -187,6 +264,16 @@ async def entrypoint(ctx: JobContext) -> None:
     await session.say(
         "Welcome to Burger King! What can I get started for you today?"
     )
+
+    # End the call shortly after the order is placed, once the agent has
+    # had a moment to say its goodbye line out loud. We poll rather than
+    # hook a callback here since `place_order` is a method on `agent`,
+    # not an event the session exposes directly.
+    while not agent.order_placed:
+        await asyncio.sleep(0.5)
+    await asyncio.sleep(4)  # let the goodbye line finish playing
+    await session.aclose()
+    ctx.disconnect()
 
 
 if __name__ == "__main__":

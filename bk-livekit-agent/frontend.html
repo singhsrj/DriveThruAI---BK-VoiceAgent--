@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BK Voice Order</title>
+<script src="https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.min.js"></script>
+<style>
+  :root {
+    --ink: #241c1a;
+    --paper: #fbf6ee;
+    --ember: #d5541f;
+    --ember-dark: #a83f16;
+    --char: #2c2422;
+    --char-light: #4a3f3b;
+    --line: #e2d8c8;
+    --ok: #2f6f4f;
+    --mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--char);
+    background-image:
+      radial-gradient(circle at 20% 0%, rgba(213, 84, 31, 0.12), transparent 55%),
+      radial-gradient(circle at 85% 100%, rgba(213, 84, 31, 0.08), transparent 50%);
+    font-family: var(--sans);
+    color: var(--paper);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 480px;
+    height: min(860px, 94vh);
+    background: #201a18;
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.5), 0 2px 0 rgba(255,255,255,0.04) inset;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ---------- Header / status ---------- */
+  header {
+    padding: 22px 22px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+
+  .brand-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .brand {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--paper);
+  }
+
+  .brand span { color: var(--ember); }
+
+  .session-id {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+  }
+
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .status-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    flex-shrink: 0;
+    transition: background 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .status-dot.connecting { background: #d9a441; box-shadow: 0 0 0 4px rgba(217,164,65,0.18); }
+  .status-dot.listening { background: #4a9de0; box-shadow: 0 0 0 4px rgba(74,157,224,0.18); }
+  .status-dot.speaking { background: var(--ember); box-shadow: 0 0 0 4px rgba(213,84,31,0.2); animation: pulse 1.1s ease-in-out infinite; }
+  .status-dot.muted { background: rgba(255,255,255,0.2); }
+  .status-dot.ended { background: var(--ok); }
+  .status-dot.error { background: #c1443a; }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.35); }
+  }
+
+  .status-text {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.78);
+    font-weight: 500;
+  }
+
+  /* ---------- Transcript ---------- */
+  .transcript {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 20px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .transcript::-webkit-scrollbar { width: 5px; }
+  .transcript::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
+
+  .bubble-row {
+    display: flex;
+    width: 100%;
+  }
+
+  .bubble-row.user { justify-content: flex-end; }
+  .bubble-row.agent { justify-content: flex-start; }
+
+  .bubble {
+    max-width: 82%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .bubble-row.agent .bubble {
+    background: rgba(255,255,255,0.06);
+    color: rgba(255,255,255,0.92);
+    border-bottom-left-radius: 4px;
+  }
+
+  .bubble-row.user .bubble {
+    background: var(--ember);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+
+  .bubble.interim { opacity: 0.55; font-style: italic; }
+
+  .empty-state {
+    margin: auto;
+    text-align: center;
+    color: rgba(255,255,255,0.35);
+    font-size: 13.5px;
+    padding: 0 30px;
+    line-height: 1.6;
+  }
+
+  /* ---------- Controls ---------- */
+  .controls {
+    flex-shrink: 0;
+    padding: 16px 20px 22px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  button {
+    font-family: var(--sans);
+    border: none;
+    cursor: pointer;
+    transition: transform 0.12s ease, filter 0.12s ease, background 0.15s ease;
+  }
+
+  button:active { transform: scale(0.96); }
+  button:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-connect {
+    flex: 1;
+    height: 52px;
+    border-radius: 26px;
+    background: var(--ember);
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  .btn-connect:hover:not(:disabled) { filter: brightness(1.08); }
+
+  .btn-mute {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .btn-mute.muted { background: #c1443a; }
+  .btn-mute:hover:not(:disabled) { background: rgba(255,255,255,0.14); }
+  .btn-mute.muted:hover:not(:disabled) { background: #a8392f; }
+
+  .btn-end {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(193,68,58,0.16);
+    color: #e2867d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .btn-end:hover:not(:disabled) { background: rgba(193,68,58,0.28); }
+
+  /* ---------- Receipt overlay ---------- */
+  .receipt-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 16, 14, 0.72);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.35s ease;
+    z-index: 10;
+  }
+
+  .receipt-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .receipt {
+    width: 100%;
+    max-width: 320px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--mono);
+    padding: 28px 24px 20px;
+    position: relative;
+    transform: translateY(18px) scale(0.97);
+    transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.45);
+  }
+
+  .receipt-overlay.show .receipt {
+    transform: translateY(0) scale(1);
+  }
+
+  .receipt::before,
+  .receipt::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 10px;
+    background:
+      radial-gradient(circle, var(--char) 5px, transparent 5.5px) 0 0 / 14px 10px repeat-x;
+  }
+
+  .receipt::before { top: -5px; }
+  .receipt::after { bottom: -5px; transform: rotate(180deg); }
+
+  .receipt-brand {
+    text-align: center;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: 0.02em;
+    margin-bottom: 2px;
+  }
+
+  .receipt-sub {
+    text-align: center;
+    font-size: 10.5px;
+    color: var(--char-light);
+    margin-bottom: 16px;
+  }
+
+  .receipt-meta {
+    font-size: 11px;
+    color: var(--char-light);
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .receipt-divider {
+    border-top: 1px dashed var(--char);
+    opacity: 0.35;
+    margin: 12px 0;
+  }
+
+  .receipt-line {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 12.5px;
+    padding: 4px 0;
+  }
+
+  .receipt-line .name {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .receipt-line .qty {
+    color: var(--char-light);
+    margin-right: 8px;
+  }
+
+  .receipt-total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 15px;
+    font-weight: 700;
+    margin-top: 4px;
+  }
+
+  .receipt-footer {
+    text-align: center;
+    font-size: 10.5px;
+    color: var(--char-light);
+    margin-top: 18px;
+    line-height: 1.6;
+  }
+
+  .receipt-close {
+    display: block;
+    margin: 18px auto 0;
+    background: var(--char);
+    color: var(--paper);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 20px;
+  }
+
+  .receipt-close:hover { filter: brightness(1.15); }
+
+  /* ---------- Connect gate ---------- */
+  .gate {
+    position: absolute;
+    inset: 0;
+    background: #201a18;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+    z-index: 5;
+    transition: opacity 0.3s ease;
+  }
+
+  .gate.hide { opacity: 0; pointer-events: none; }
+
+  .gate-mark {
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    background: var(--ember);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    font-size: 24px;
+  }
+
+  .gate h1 {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 0 0 8px;
+  }
+
+  .gate p {
+    font-size: 13.5px;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.6;
+    margin: 0 0 28px;
+    max-width: 280px;
+  }
+
+  .gate input {
+    width: 100%;
+    max-width: 280px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: var(--paper);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+  }
+
+  .gate input::placeholder { color: rgba(255,255,255,0.3); }
+
+  .gate-error {
+    font-size: 12px;
+    color: #e2867d;
+    margin-top: 4px;
+    min-height: 16px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Connect gate: room URL + token -->
+  <div class="gate" id="gate">
+    <div class="gate-mark">🍔</div>
+    <h1>BK Voice Order</h1>
+    <p>Enter your LiveKit server URL and a room access token to connect.</p>
+    <input id="urlInput" type="text" placeholder="ws://localhost:7880" value="ws://localhost:7880" />
+    <input id="tokenInput" type="text" placeholder="paste access token" />
+    <button class="btn-connect" id="gateConnectBtn" style="margin-top: 14px; max-width: 280px; width: 100%;">Connect</button>
+    <div class="gate-error" id="gateError"></div>
+  </div>
+
+  <header>
+    <div class="brand-row">
+      <div class="brand">BK <span>Voice Order</span></div>
+      <div class="session-id" id="sessionId">—</div>
+    </div>
+    <div class="status-row">
+      <div class="status-dot" id="statusDot"></div>
+      <div class="status-text" id="statusText">Not connected</div>
+    </div>
+  </header>
+
+  <div class="transcript" id="transcript">
+    <div class="empty-state" id="emptyState">Connect to start your order.<br/>The assistant will greet you first.</div>
+  </div>
+
+  <div class="controls">
+    <button class="btn-mute" id="muteBtn" disabled title="Mute microphone">
+      <svg id="micIconOn" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+      <svg id="micIconOff" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+    <button class="btn-connect" id="connectBtn" disabled>Waiting…</button>
+    <button class="btn-end" id="endBtn" disabled title="End call">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a.996.996 0 0 1-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .27-.11.52-.29.7l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28-.79-.73-1.68-1.36-2.66-1.85a.996.996 0 0 1-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" transform="rotate(135 12 12)"/></svg>
+    </button>
+  </div>
+
+  <!-- Receipt overlay -->
+  <div class="receipt-overlay" id="receiptOverlay">
+    <div class="receipt">
+      <div class="receipt-brand">BURGER KING</div>
+      <div class="receipt-sub">voice order &middot; order confirmed</div>
+      <div class="receipt-meta">
+        <span id="rOrderId">#——</span>
+        <span id="rTime">—</span>
+      </div>
+      <div class="receipt-divider"></div>
+      <div id="rLines"></div>
+      <div class="receipt-divider"></div>
+      <div class="receipt-total">
+        <span>TOTAL</span>
+        <span id="rTotal">$0.00</span>
+      </div>
+      <div class="receipt-footer">Show this screen at the counter<br/>to collect your order. Thank you!</div>
+      <button class="receipt-close" id="receiptCloseBtn">Done</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function () {
+  const LK = window.LivekitClient;
+  const ORDER_TOPIC = "bk-order-receipt";
+  const TRANSCRIPTION_TOPIC = "lk.transcription";
+
+  const el = {
+    gate: document.getElementById('gate'),
+    urlInput: document.getElementById('urlInput'),
+    tokenInput: document.getElementById('tokenInput'),
+    gateConnectBtn: document.getElementById('gateConnectBtn'),
+    gateError: document.getElementById('gateError'),
+    statusDot: document.getElementById('statusDot'),
+    statusText: document.getElementById('statusText'),
+    sessionId: document.getElementById('sessionId'),
+    transcript: document.getElementById('transcript'),
+    emptyState: document.getElementById('emptyState'),
+    muteBtn: document.getElementById('muteBtn'),
+    micIconOn: document.getElementById('micIconOn'),
+    micIconOff: document.getElementById('micIconOff'),
+    connectBtn: document.getElementById('connectBtn'),
+    endBtn: document.getElementById('endBtn'),
+    receiptOverlay: document.getElementById('receiptOverlay'),
+    rOrderId: document.getElementById('rOrderId'),
+    rTime: document.getElementById('rTime'),
+    rLines: document.getElementById('rLines'),
+    rTotal: document.getElementById('rTotal'),
+    receiptCloseBtn: document.getElementById('receiptCloseBtn'),
+  };
+
+  let room = null;
+  let micEnabled = true;
+  const segmentEls = new Map(); // segment_id -> bubble element (for streaming updates)
+
+  function setStatus(state, text) {
+    el.statusDot.className = 'status-dot ' + state;
+    el.statusText.textContent = text;
+  }
+
+  function scrollToBottom() {
+    el.transcript.scrollTop = el.transcript.scrollHeight;
+  }
+
+  function addOrUpdateBubble(segmentId, role, text, isFinal) {
+    el.emptyState.style.display = 'none';
+    let bubble = segmentEls.get(segmentId);
+    if (!bubble) {
+      const row = document.createElement('div');
+      row.className = 'bubble-row ' + (role === 'user' ? 'user' : 'agent');
+      bubble = document.createElement('div');
+      bubble.className = 'bubble interim';
+      row.appendChild(bubble);
+      el.transcript.appendChild(row);
+      segmentEls.set(segmentId, bubble);
+    }
+    bubble.textContent = text;
+    bubble.classList.toggle('interim', !isFinal);
+    scrollToBottom();
+  }
+
+  function money(n) {
+    return '$' + Number(n).toFixed(2);
+  }
+
+  function showReceipt(data) {
+    el.rOrderId.textContent = '#' + (data.order_id || '——');
+    try {
+      const d = new Date(data.placed_at);
+      el.rTime.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      el.rTime.textContent = '';
+    }
+    el.rLines.innerHTML = '';
+    (data.items || []).forEach(function (item) {
+      const line = document.createElement('div');
+      line.className = 'receipt-line';
+      const qty = item.quantity && item.quantity > 1 ? item.quantity + 'x ' : '';
+      line.innerHTML =
+        '<span class="name">' + qty + escapeHtml(item.name || 'Item') + '</span>' +
+        '<span>' + money(item.price || 0) + '</span>';
+      el.rLines.appendChild(line);
+    });
+    el.rTotal.textContent = money(data.total || 0);
+    el.receiptOverlay.classList.add('show');
+    setStatus('ended', 'Order placed — call ending');
+  }
+
+  function escapeHtml(s) {
+    const div = document.createElement('div');
+    div.textContent = s;
+    return div.innerHTML;
+  }
+
+  function setControlsConnected(connected) {
+    el.muteBtn.disabled = !connected;
+    el.endBtn.disabled = !connected;
+    el.connectBtn.disabled = connected;
+    el.connectBtn.textContent = connected ? 'Connected' : 'Waiting…';
+  }
+
+  async function connect(url, token) {
+    room = new LK.Room({ adaptiveStream: true, dynacast: true });
+
+    room.on(LK.RoomEvent.ConnectionStateChanged, function (state) {
+      if (state === LK.ConnectionState.Connecting) setStatus('connecting', 'Connecting…');
+      if (state === LK.ConnectionState.Connected) setStatus('listening', 'Listening');
+      if (state === LK.ConnectionState.Disconnected) {
+        setStatus('ended', 'Disconnected');
+        setControlsConnected(false);
+      }
+      if (state === LK.ConnectionState.Reconnecting) setStatus('connecting', 'Reconnecting…');
+    });
+
+    room.on(LK.RoomEvent.Disconnected, function () {
+      setStatus('ended', 'Call ended');
+      setControlsConnected(false);
+    });
+
+    room.on(LK.RoomEvent.ActiveSpeakersChanged, function (speakers) {
+      const agentSpeaking = speakers.some(function (p) { return !p.isLocal; });
+      if (agentSpeaking) {
+        setStatus('speaking', 'Speaking…');
+      } else if (room.state === LK.ConnectionState.Connected) {
+        setStatus(micEnabled ? 'listening' : 'muted', micEnabled ? 'Listening' : 'Muted');
+      }
+    });
+
+    // Transcriptions (both user STT and agent TTS-aligned text) arrive on
+    // the lk.transcription text stream topic, split into segments; each
+    // segment streams interim chunks then a final one.
+    room.registerTextStreamHandler(TRANSCRIPTION_TOPIC, async function (reader, participantInfo) {
+      const info = reader.info;
+      const segmentId = info.attributes && info.attributes['lk.segment_id']
+        ? info.attributes['lk.segment_id']
+        : info.id;
+      const isFinal = info.attributes && info.attributes['lk.transcription_final'] === 'true';
+      const role = participantInfo.isLocal ? 'user' : 'agent';
+
+      let text = '';
+      for await (const chunk of reader) {
+        text += chunk;
+        addOrUpdateBubble(segmentId, role, text, false);
+      }
+      addOrUpdateBubble(segmentId, role, text, isFinal !== false);
+    });
+
+    // Structured order receipt, published by bot.py's place_order tool.
+    room.registerTextStreamHandler(ORDER_TOPIC, async function (reader) {
+      let text = '';
+      for await (const chunk of reader) {
+        text += chunk;
+      }
+      try {
+        const data = JSON.parse(text);
+        showReceipt(data);
+      } catch (e) {
+        console.error('Failed to parse order receipt', e);
+      }
+    });
+
+    try {
+      await room.connect(url, token);
+      await room.localParticipant.setMicrophoneEnabled(true);
+      el.sessionId.textContent = room.name || '—';
+      setControlsConnected(true);
+      setStatus('listening', 'Listening');
+    } catch (err) {
+      console.error(err);
+      setStatus('error', 'Connection failed');
+      el.gateError.textContent = 'Could not connect: ' + (err.message || err);
+      throw err;
+    }
+  }
+
+  async function toggleMute() {
+    if (!room) return;
+    micEnabled = !micEnabled;
+    await room.localParticipant.setMicrophoneEnabled(micEnabled);
+    el.muteBtn.classList.toggle('muted', !micEnabled);
+    el.micIconOn.style.display = micEnabled ? 'block' : 'none';
+    el.micIconOff.style.display = micEnabled ? 'none' : 'block';
+    if (room.state === LK.ConnectionState.Connected) {
+      setStatus(micEnabled ? 'listening' : 'muted', micEnabled ? 'Listening' : 'Muted');
+    }
+  }
+
+  async function endCall() {
+    if (!room) return;
+    await room.disconnect();
+  }
+
+  el.gateConnectBtn.addEventListener('click', async function () {
+    const url = el.urlInput.value.trim();
+    const token = el.tokenInput.value.trim();
+    el.gateError.textContent = '';
+    if (!url || !token) {
+      el.gateError.textContent = 'Enter both a server URL and a token.';
+      return;
+    }
+    el.gateConnectBtn.disabled = true;
+    el.gateConnectBtn.textContent = 'Connecting…';
+    try {
+      await connect(url, token);
+      el.gate.classList.add('hide');
+    } catch (e) {
+      el.gateConnectBtn.disabled = false;
+      el.gateConnectBtn.textContent = 'Connect';
+    }
+  });
+
+  el.muteBtn.addEventListener('click', toggleMute);
+  el.endBtn.addEventListener('click', endCall);
+  el.receiptCloseBtn.addEventListener('click', function () {
+    el.receiptOverlay.classList.remove('show');
+  });
+})();
+</script>
+
+</body>
+</html>

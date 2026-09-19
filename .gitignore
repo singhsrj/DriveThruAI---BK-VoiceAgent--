@@ -10,3 +10,5 @@ wheels/
 *.env
 
 *.venv
+
+voice-agent

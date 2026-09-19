@@ -209,14 +209,16 @@ name = "bk-livekit-agent"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
-    { name = "livekit-agents", extra = ["assemblyai", "cartesia", "deepgram", "groq", "mcp", "silero"] },
+    { name = "livekit-agents", extra = ["assemblyai", "cartesia", "deepgram", "groq", "mcp", "openai", "silero"] },
+    { name = "livekit-api" },
     { name = "loguru" },
     { name = "python-dotenv" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "livekit-agents", extras = ["assemblyai", "groq", "cartesia", "deepgram", "silero", "mcp"], specifier = "~=1.5" },
+    { name = "livekit-agents", extras = ["assemblyai", "groq", "openai", "cartesia", "deepgram", "silero", "mcp"], specifier = "~=1.5" },
+    { name = "livekit-api", specifier = ">=0.8" },
     { name = "loguru", specifier = ">=0.7.3" },
     { name = "python-dotenv", specifier = ">=1.2.3" },
 ]

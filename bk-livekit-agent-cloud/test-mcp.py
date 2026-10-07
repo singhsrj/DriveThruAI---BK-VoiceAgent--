@@ -3,7 +3,7 @@ from mcp import ClientSession
 from mcp.client.streamable_http import streamablehttp_client
 
 async def main():
-    async with streamablehttp_client("http://35.154.31.8:8943/mcp") as (r, w, _):
+    async with streamablehttp_client("https://drivethruai-mcp.onrender.com/mcp") as (r, w, _):
         async with ClientSession(r, w) as s:
             await s.initialize()
             tools = await s.list_tools()

@@ -53,7 +53,7 @@ from livekit.plugins import ai_coustics, assemblyai, cartesia, deepgram, openai,
 load_dotenv(".env.local")
 load_dotenv()
 
-MCP_SERVER_URL = 'https://drivethruai-mcp.onrender.com/mcp'
+MCP_SERVER_URL = 'http://65.0.71.171:8943/mcp'
 logger.info(f"MCP_SERVER_URL = {MCP_SERVER_URL}")
 
 SYSTEM_PROMPT = """You are the voice ordering assistant for Burger King.

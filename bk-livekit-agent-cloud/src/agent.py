@@ -25,35 +25,40 @@ Run locally:
 """
 
 import asyncio
+import contextlib
 import json
 import os
 import uuid
 from datetime import datetime, timezone
 
 from dotenv import load_dotenv
-from loguru import logger
-
 from livekit import agents, rtc
 from livekit.agents import (
     Agent,
     AgentServer,
     AgentSession,
+    APIConnectOptions,
     JobContext,
     JobProcess,
     RunContext,
     cli,
     function_tool,
+    llm,
     mcp,
     room_io,
 )
+from livekit.agents.voice.agent_session import SessionConnectOptions
 from livekit.plugins import ai_coustics, assemblyai, cartesia, deepgram, openai, silero
+from loguru import logger
+
+from monitoring import ProviderMonitor, log_openrouter_credit
 
 # Local dev: .env.local (template default), then plain .env as a fallback.
 # On LiveKit Cloud the values come from deployed secrets instead.
 load_dotenv(".env.local")
 load_dotenv()
 
-MCP_SERVER_URL = 'http://65.0.71.171:8943/mcp'
+MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://65.0.71.171:8943/mcp")
 logger.info(f"MCP_SERVER_URL = {MCP_SERVER_URL}")
 
 SYSTEM_PROMPT = """You are the voice ordering assistant for Burger King.
@@ -111,6 +116,101 @@ Your job:
 Be warm and efficient, like a friendly cashier — not overly chatty.
 """
 
+# Avoid ":free" models in production: they share tight per-minute / per-day
+# caps across the whole key and are the most common cause of silent 429s.
+OPENROUTER_FALLBACK_MODELS = [
+    m.strip()
+    for m in os.getenv(
+        "OPENROUTER_FALLBACK_MODELS", "mistralai/mistral-nemo,openai/gpt-oss-120b"
+    ).split(",")
+    if m.strip()
+]
+
+
+def build_llm() -> llm.FallbackAdapter:
+    """LLM chain that survives one provider/key being exhausted.
+
+    1. OpenRouter primary, with OpenRouter's own server-side model routing
+       (handles a single model being rate-limited or down — no extra latency).
+    2. Groq on a *different* account/key, so an OpenRouter 402 (no credits)
+       or 401 (bad key) — which every OpenRouter model shares — still has a way out.
+    """
+    primary = os.getenv("OPENROUTER_MODEL", "mistralai/mistral-nemo")
+    chain: list[llm.LLM] = [
+        openai.LLM.with_openrouter(
+            model=primary,
+            fallback_models=[m for m in OPENROUTER_FALLBACK_MODELS if m != primary],
+            temperature=0.4,
+        )
+    ]
+    if os.getenv("GROQ_API_KEY"):
+        # Groq is OpenAI-compatible; no extra plugin needed.
+        chain.append(
+            openai.LLM(
+                model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+                base_url="https://api.groq.com/openai/v1",
+                api_key=os.environ["GROQ_API_KEY"],
+                temperature=0.4,
+            )
+        )
+    return llm.FallbackAdapter(
+        chain,
+        attempt_timeout=8.0,
+        max_retry_per_llm=0,  # 402/401 won't fix itself, so move on immediately
+    )
+
+
+def build_stt() -> agents.stt.FallbackAdapter:
+    """AssemblyAI primary, Deepgram fallback (separate key/quota)."""
+    return agents.stt.FallbackAdapter(
+        [
+            assemblyai.STT(
+                api_key=os.getenv("ASSEMBLYAI_API_KEY"),
+                # English is selected via the model name itself.
+                model="universal-streaming-english",
+            ),
+            deepgram.STT(api_key=os.getenv("DEEPGRAM_API_KEY"), model="nova-3"),
+        ],
+        max_retry_per_stt=1,
+    )
+
+
+def build_tts() -> agents.tts.FallbackAdapter:
+    """Cartesia primary, Deepgram Aura fallback."""
+    return agents.tts.FallbackAdapter(
+        [
+            cartesia.TTS(
+                api_key=os.getenv("CARTESIA_API_KEY"),
+                voice=os.getenv(
+                    "CARTESIA_VOICE_ID", "71a7ad14-091c-4e8e-a314-022ece01c121"
+                ),
+            ),
+            deepgram.TTS(
+                api_key=os.getenv("DEEPGRAM_API_KEY"),
+                model=os.getenv("DEEPGRAM_VOICE", "aura-2-helena-en"),
+            ),
+        ],
+        max_retry_per_tts=1,  # fail over fast instead of 2 retries of dead air
+    )
+
+
+async def keep_mcp_alive(server: mcp.MCPServerHTTP) -> None:
+    """LiveKit's MCP client never reconnects on its own: if the MCP server
+    restarts or the connection drops mid-call, every menu tool fails for the
+    rest of the session and the agent appears to 'freeze'. Re-open it."""
+    while True:
+        await asyncio.sleep(5)
+        if server.initialized:
+            continue
+        logger.warning("PROVIDER_ALERT provider=mcp kind=disconnected — reconnecting")
+        try:
+            await asyncio.wait_for(server.initialize(), timeout=10)
+            logger.info("MCP reconnected")
+        except Exception as e:
+            logger.error(
+                f"PROVIDER_ALERT provider=mcp kind=reconnect_failed detail={e!r}"
+            )
+
 
 class BKAgent(Agent):
     """The BK ordering assistant, wired to the bk-menu MCP server."""
@@ -118,18 +218,14 @@ class BKAgent(Agent):
     # Topic the frontend listens on for the structured receipt payload.
     ORDER_TOPIC = "bk-order-receipt"
 
-    def __init__(self, room: rtc.Room) -> None:
+    def __init__(self, room: rtc.Room, mcp_server: mcp.MCPServerHTTP) -> None:
         super().__init__(
             instructions=SYSTEM_PROMPT,
-            tools=[
-                mcp.MCPToolset(
-                    id="bk-menu",
-                    mcp_server=mcp.MCPServerHTTP(MCP_SERVER_URL),
-                )
-            ],
+            tools=[mcp.MCPToolset(id="bk-menu", mcp_server=mcp_server)],
         )
         self._room = room
         self.order_placed = False
+        self.order_done = asyncio.Event()
 
     @function_tool()
     async def place_order(
@@ -174,6 +270,7 @@ class BKAgent(Agent):
             logger.exception("Failed to publish order receipt to frontend")
 
         self.order_placed = True
+        self.order_done.set()
         return {"status": "confirmed", "order_id": order_id}
 
 
@@ -195,35 +292,65 @@ async def entrypoint(ctx: JobContext) -> None:
     ctx.log_context_fields = {"room": ctx.room.name}
     await ctx.connect()
 
-    # TTS failover: Cartesia primary, Deepgram Aura as fallback.
-    tts = agents.tts.FallbackAdapter(
-        [
-            cartesia.TTS(
-                api_key=os.getenv("CARTESIA_API_KEY"),
-                voice=os.getenv("CARTESIA_VOICE_ID", "71a7ad14-091c-4e8e-a314-022ece01c121"),
-            ),
-            deepgram.TTS(
-                api_key=os.getenv("DEEPGRAM_API_KEY"),
-                model=os.getenv("DEEPGRAM_VOICE", "aura-2-helena-en"),
-            ),
-        ]
+    mcp_server = mcp.MCPServerHTTP(
+        MCP_SERVER_URL,
+        timeout=10,  # connect timeout (default 5s is tight for a remote DB host)
+        client_session_timeout_seconds=15,  # per tool-call read timeout
     )
+    llm_chain = build_llm()
+    stt_chain = build_stt()
+    tts_chain = build_tts()
 
     session = AgentSession(
         vad=ctx.proc.userdata["vad"],
-        stt=assemblyai.STT(
-            api_key=os.getenv("ASSEMBLYAI_API_KEY"),
-            # English is selected via the model name itself.
-            model="universal-streaming-english",
+        stt=stt_chain,
+        llm=llm_chain,
+        tts=tts_chain,
+        # Fewer internal retries: the fallback adapters should switch provider
+        # quickly instead of spending ~30s retrying a dead/exhausted key.
+        conn_options=SessionConnectOptions(
+            llm_conn_options=APIConnectOptions(
+                max_retry=1, retry_interval=1.0, timeout=10
+            ),
+            tts_conn_options=APIConnectOptions(
+                max_retry=1, retry_interval=1.0, timeout=10
+            ),
+            stt_conn_options=APIConnectOptions(
+                max_retry=2, retry_interval=1.0, timeout=10
+            ),
         ),
-        llm=openai.LLM.with_openrouter(
-            model=os.getenv("OPENROUTER_MODEL", "upstage/solar-pro4"),
-            temperature=0.4,
-        ),
-        tts=tts,
+        max_tool_steps=5,  # search -> details -> extras -> place_order fits
     )
 
-    agent = BKAgent(room=ctx.room)
+    monitor = ProviderMonitor(ctx.room.name)
+    monitor.attach(session, llm_chain, stt_chain, tts_chain)
+    background: set[asyncio.Task] = set()
+
+    def _spawn(coro) -> None:
+        t = asyncio.create_task(coro)
+        background.add(t)
+        t.add_done_callback(background.discard)
+
+    _spawn(log_openrouter_credit(monitor))
+
+    # If an LLM turn fails outright, say something instead of going silent.
+    # session.say() only needs TTS, so it still works when the LLM is down.
+    @session.on("error")
+    def _on_error(ev) -> None:
+        if isinstance(ev.source, llm.LLM) and not getattr(
+            ev.error, "recoverable", True
+        ):
+            # RuntimeError: session is already closing.
+            with contextlib.suppress(RuntimeError):
+                session.say("Sorry, I missed that. Could you say it again?")
+
+    # When the session dies (e.g. 3 unrecoverable provider errors) end the job.
+    # Previously the order-polling loop kept the job alive forever with a
+    # silent agent in the room — that looks exactly like a "freeze".
+    session_closed = asyncio.Event()
+    session.on("close", lambda _ev: session_closed.set())
+
+    agent = BKAgent(room=ctx.room, mcp_server=mcp_server)
     await session.start(
         agent=agent,
         room=ctx.room,
@@ -237,20 +364,29 @@ async def entrypoint(ctx: JobContext) -> None:
             ),
         ),
     )
+    _spawn(keep_mcp_alive(mcp_server))
 
     # session.say() goes straight to TTS (no LLM), so the opening line
     # works with any model and doesn't depend on a prior user message.
-    await session.say(
-        "Welcome to Burger King! What can I get started for you today?"
-    )
+    await session.say("Welcome to Burger King! What can I get started for you today?")
 
-    # End the call shortly after the order is placed, once the agent has
-    # had a moment to say its goodbye line out loud.
-    while not agent.order_placed:
-        await asyncio.sleep(0.5)
-    await asyncio.sleep(4)  # let the goodbye line finish playing
-    await session.aclose()
-    ctx.disconnect()
+    # Wait for whichever comes first: order placed, or session closed.
+    _done, pending = await asyncio.wait(
+        [
+            asyncio.create_task(agent.order_done.wait()),
+            asyncio.create_task(session_closed.wait()),
+        ],
+        return_when=asyncio.FIRST_COMPLETED,
+    )
+    for t in pending:
+        t.cancel()
+
+    if agent.order_placed and not session_closed.is_set():
+        await asyncio.sleep(4)  # let the goodbye line finish playing
+        await session.aclose()
+    for t in list(background):
+        t.cancel()
+    ctx.shutdown(reason="order placed" if agent.order_placed else "session closed")
 
 
 if __name__ == "__main__":

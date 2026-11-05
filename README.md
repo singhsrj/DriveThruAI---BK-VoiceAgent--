@@ -38,9 +38,8 @@ The repository is partitioned into distinct pieces, each targeting one layer of 
 
 | Subproject | Role |
 | --- | --- |
-| **`bk-menu-mcp`** | A read-only MCP server (built on FastMCP) exposing Burger King menu items, categories, and combos as callable tools (`get_item`, `list_items`, `get_combo`, `search_items`). Deployable to Render. |
-| **`bk-livekit-agent`** | A LiveKit worker agent (`BKAgent`) handling room lifecycles, the system prompt, and tool execution against the menu MCP server. Uses AssemblyAI STT, Groq (Llama 3.3 70B) for inference, and Cartesia TTS with Deepgram Aura as fallback. |
-| **`voice-agent`** | An alternate Pipecat-based voice pipeline (Hindi ordering bot) using Deepgram nova-3 STT, Groq Llama LLM, Cartesia primary TTS with ElevenLabs automatic failover, and Daily as the WebRTC transport. Adds an in-memory, no-TTL cache around MCP tool calls, since menu data is read-only for the life of the process. |
+| **`bk-menu-mcp`** | (Production, Render) A read-only MCP server (built on FastMCP) exposing Burger King menu items, categories, and combos as callable tools (`get_item`, `list_items`, `get_combo`, `search_items`). Deployable to Render. |
+| **`bk-livekit-agent-cloud`** | The production LiveKit Cloud voice agent (`BKAgent`): room lifecycle, system prompt, `place_order` tool and menu tools via the MCP server. AssemblyAI STT -> Deepgram fallback, OpenRouter LLM -> Groq fallback, Cartesia TTS -> Deepgram Aura fallback, plus `PROVIDER_ALERT` monitoring. |
 | **`bk_neon`** | An experimental LangGraph state graph and Neon Postgres backend implementing constraint-driven, max-info-gain slot filling for order construction — the deep dive is [below](#bk_neon-constraint-driven-ordering-backend). |
 
 ## Architecture
@@ -48,8 +47,7 @@ The repository is partitioned into distinct pieces, each targeting one layer of 
 ```mermaid
 flowchart TB
     subgraph Voice["Voice Layer"]
-        LK["bk-livekit-agent<br/>(LiveKit, AssemblyAI, Groq, Cartesia/Deepgram)"]
-        PC["voice-agent<br/>(Pipecat, Deepgram, Groq, Cartesia/ElevenLabs, Daily)"]
+        LK["bk-livekit-agent-cloud<br/>(LiveKit, AssemblyAI, OpenRouter/Groq, Cartesia/Deepgram)"]
     end
 
     subgraph MCP["Menu Layer"]
@@ -96,29 +94,21 @@ docker run --rm -it -p 7880:7880 -p 7881:7881 -p 7882:7882/udp \
   livekit/livekit-server --dev
 ```
 
-The `--dev` flag binds the fixed `devkey` / `secret` credentials used in `bk-livekit-agent/env.example`.
+The `--dev` flag binds the fixed `devkey` / `secret` credentials for local development.
 
 ### 4. Run the LiveKit voice agent
 
 ```bash
-cd bk-livekit-agent
-cp env.example .env   # fill in LIVEKIT_*, ASSEMBLYAI_API_KEY, GROQ_API_KEY, CARTESIA_API_KEY, DEEPGRAM_API_KEY, MCP_SERVER_URL
+cd bk-livekit-agent-cloud
+cp .env.example .env.local   # fill in the keys listed in that folder's README
 uv sync
-uv run bot.py console   # or: uv run bot.py dev
+uv run src/agent.py console   # or: uv run src/agent.py dev
 ```
 
-`console` runs the full pipeline locally through your machine's mic/speakers with no browser or LiveKit room needed; `dev`/`start` run it as a worker listening for room-dispatch events.
+`console` runs the full pipeline locally through your machine's mic/speakers; `dev`/`start` run it as a worker listening for room-dispatch events. See `bk-livekit-agent-cloud/README.md` for all configuration and deploy steps.
 
-### 5. (Alternative) Run the Pipecat voice agent
+### 5. (Experimental) Set up bk_neon
 
-```bash
-cd voice-agent
-cp env.example .env
-uv sync
-uv run bot.py
-```
-
-### 6. (Experimental) Set up bk_neon
 
 See the [bk_neon setup instructions](#bk_neon-constraint-driven-ordering-backend) below — it runs independently against its own Neon Postgres + Upstash Redis instances.
 
@@ -129,14 +119,13 @@ See the [bk_neon setup instructions](#bk_neon-constraint-driven-ordering-backend
 | `DATABASE_URL` | `bk-menu-mcp`, `bk_neon` | Postgres connection string (`postgres://` and `postgresql://` both accepted, normalized internally) |
 | `DATABASE_URL_DIRECT` | `bk_neon` (Alembic) | Direct, non-pooled Neon string — DDL through a pooler can deadlock |
 | `REDIS_URL` | `bk_neon` | `rediss://` TCP protocol — Upstash's REST `https://` URL will not work |
-| `LIVEKIT_URL` | `bk-livekit-agent` | WebSocket endpoint, e.g. `ws://localhost:7880` |
-| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | `bk-livekit-agent` | `devkey` / `secret` in local dev |
-| `ASSEMBLYAI_API_KEY` | `bk-livekit-agent` | Streaming STT |
-| `GROQ_API_KEY` | `bk-livekit-agent`, `voice-agent` | LLM inference (e.g. Llama 3.3 70B) |
-| `CARTESIA_API_KEY` / `CARTESIA_VOICE_ID` | `bk-livekit-agent`, `voice-agent` | Primary low-latency TTS |
-| `DEEPGRAM_API_KEY` / `DEEPGRAM_VOICE` | `bk-livekit-agent` | Fallback TTS (Aura); also STT (nova-3) in `voice-agent` |
-| `MCP_SERVER_URL` | `bk-livekit-agent` | Must end in `/mcp` so the LiveKit MCP client uses streamable HTTP rather than SSE |
-| `MEMORY_MCP_URL` | `voice-agent` | Optional long-term customer-memory MCP endpoint |
+| `LIVEKIT_URL` | `bk-livekit-agent-cloud` | WebSocket endpoint, e.g. `ws://localhost:7880` |
+| `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | `bk-livekit-agent-cloud` | `devkey` / `secret` in local dev |
+| `ASSEMBLYAI_API_KEY` | `bk-livekit-agent-cloud` | Streaming STT |
+| `GROQ_API_KEY` | `bk-livekit-agent-cloud` | LLM inference (e.g. Llama 3.3 70B) |
+| `CARTESIA_API_KEY` / `CARTESIA_VOICE_ID` | `bk-livekit-agent-cloud` | Primary low-latency TTS |
+| `DEEPGRAM_API_KEY` / `DEEPGRAM_VOICE` | `bk-livekit-agent-cloud` | Fallback TTS (Aura) and STT fallback (nova-3) |
+| `MCP_SERVER_URL` | `bk-livekit-agent-cloud` | Must end in `/mcp` so the LiveKit MCP client uses streamable HTTP rather than SSE |
 
 ---
 
@@ -169,7 +158,7 @@ See the [bk_neon setup instructions](#bk_neon-constraint-driven-ordering-backend
 | Agent orchestration | LangGraph | Native interrupts, checkpointed state, conditional routing |
 | Cache + queue broker | Redis (Upstash) | One instance, two jobs: response caching and `arq`'s job queue |
 | Background jobs | `arq` | Natively async, no sync/async bridging |
-| Voice I/O | Pipecat / LiveKit Agents | STT/TTS pipelines, barge-in, turn-taking |
+| Voice I/O | LiveKit Agents | STT/TTS pipelines, barge-in, turn-taking |
 
 ### Database schema
 
@@ -279,7 +268,7 @@ Runs the full pipeline against a throwaway database and checks, among other thin
 
 ## Roadmap
 
-- [ ] Wire `bk_neon`'s ordering brain into the live voice pipeline (`bk-livekit-agent` / `voice-agent`)
+- [ ] Wire `bk_neon`'s ordering brain into the live voice pipeline (`bk-livekit-agent-cloud`)
 - [ ] Wire `present_options` to a live LLM call (currently a stub returning the candidate set)
 - [ ] Full cart/order-total tracking in `AgentState` so the graph loops through a full order instead of stopping after one query
 - [ ] Real order persistence (`orders` table) instead of the current stubbed `confirm_order` job

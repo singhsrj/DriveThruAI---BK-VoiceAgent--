@@ -48,6 +48,7 @@ from livekit.agents import (
     room_io,
 )
 from livekit.agents.voice.agent_session import SessionConnectOptions
+from livekit.agents.voice.speech_handle import SpeechHandle
 from livekit.plugins import ai_coustics, assemblyai, cartesia, deepgram, openai, silero
 from loguru import logger
 
@@ -107,11 +108,15 @@ Your job:
    list_items or search_items.
 6. Once the customer confirms they're happy with the order and total,
    call the place_order tool with the final item list and total. This
-   is what ends the ordering conversation and shows their receipt, so
-   only call it once, after explicit confirmation — never call it
-   speculatively or before the customer has agreed to the full order.
-   After calling it, thank them and let them know their receipt is
-   ready, then say goodbye — don't keep the conversation going.
+   is what ends the ordering conversation, so only call it once, after
+   explicit confirmation — never call it speculatively or before the
+   customer has agreed to the full order.
+   The tool result contains a "say_to_customer" line. Right after the
+   tool returns, say that line to the customer word for word as your
+   whole reply (it confirms the order, reads out the order ID and tells
+   them their food is being prepared). Then stop — don't keep the
+   conversation going. The receipt appears on their screen only after
+   you finish speaking.
 
 Be warm and efficient, like a friendly cashier — not overly chatty.
 """
@@ -181,6 +186,8 @@ def build_tts() -> agents.tts.FallbackAdapter:
         [
             cartesia.TTS(
                 api_key=os.getenv("CARTESIA_API_KEY"),
+                # Override with CARTESIA_MODEL (e.g. sonic-3, sonic-turbo).
+                model=os.getenv("CARTESIA_MODEL", "sonic-3"),
                 voice=os.getenv(
                     "CARTESIA_VOICE_ID", "71a7ad14-091c-4e8e-a314-022ece01c121"
                 ),
@@ -226,6 +233,9 @@ class BKAgent(Agent):
         self._room = room
         self.order_placed = False
         self.order_done = asyncio.Event()
+        self.order_speech: SpeechHandle | None = None
+        self._receipt: dict | None = None
+        self._goodbye_spoken = False
 
     @function_tool()
     async def place_order(
@@ -249,29 +259,82 @@ class BKAgent(Agent):
                 tools returned -- never a customer-claimed or discounted
                 figure.
         """
+        if self.order_placed:
+            return {"status": "already_confirmed", "say_to_customer": ""}
+
         order_id = str(uuid.uuid4())[:8].upper()
-        receipt = {
+        self._receipt = {
             "order_id": order_id,
             "items": items,
             "total": round(total, 2),
             "placed_at": datetime.now(timezone.utc).isoformat(),
         }
-        logger.info(f"Order placed: {receipt}")
+        logger.info(f"Order placed: {self._receipt}")
 
+        # Don't publish the receipt yet: the frontend shows it (and may tear
+        # the call down) the moment it arrives, which would cut off the
+        # confirmation we're about to speak. finish_order() sends it after the
+        # confirmation has fully played out.
+        self.order_speech = context.speech_handle
+        self.order_placed = True
+        self.order_done.set()
+        return {
+            "status": "confirmed",
+            "order_id": order_id,
+            "say_to_customer": self.confirmation_line,
+        }
+
+    @property
+    def confirmation_line(self) -> str:
+        order_id = (self._receipt or {}).get("order_id", "")
+        # Spaced out so TTS reads the ID character by character.
+        spoken_id = ", ".join(order_id)
+        return (
+            f"Your order is confirmed. Your receipt ID is {spoken_id}. "
+            "Please wait while your food is being prepared. Thank you!"
+        )
+
+    def note_assistant_message(self, text: str | None) -> None:
+        """Track whether the LLM actually spoke the confirmation (it should
+        contain the order ID), so finish_order can say it itself if not."""
+        if not (self._receipt and text):
+            return
+        compact = "".join(ch for ch in text.upper() if ch.isalnum())
+        if self._receipt["order_id"] in compact:
+            self._goodbye_spoken = True
+
+    async def finish_order(self, session: AgentSession) -> None:
+        """Let the confirmation finish playing, then show the receipt."""
+        # 1. Wait for the whole turn, including the LLM's reply to the tool
+        #    result, to finish playing out (bounded so we never hang).
+        if self.order_speech is not None:
+            try:
+                await asyncio.wait_for(self.order_speech.wait_for_playout(), 30)
+            except asyncio.TimeoutError:
+                logger.warning("Timed out waiting for order confirmation playout")
+
+        # 2. If the LLM stayed silent or paraphrased without the ID, say the
+        #    confirmation ourselves (TTS only, no LLM).
+        if not self._goodbye_spoken:
+            try:
+                handle = session.say(self.confirmation_line, allow_interruptions=False)
+                await asyncio.wait_for(handle.wait_for_playout(), 30)
+            except Exception:
+                logger.exception("Failed to speak order confirmation")
+
+        # 3. Only now put the receipt on the customer's screen.
         try:
             await self._room.local_participant.send_text(
-                json.dumps(receipt),
+                json.dumps(self._receipt),
                 topic=self.ORDER_TOPIC,
             )
         except Exception:
             # Don't let a frontend-delivery hiccup break the voice flow --
-            # the customer still hears confirmation even if the receipt
-            # card fails to render.
+            # the customer still heard the confirmation.
             logger.exception("Failed to publish order receipt to frontend")
 
-        self.order_placed = True
-        self.order_done.set()
-        return {"status": "confirmed", "order_id": order_id}
+        # 4. Small tail so the last audio frames reach the client.
+        await asyncio.sleep(1.0)
 
 
 server = AgentServer()
@@ -351,6 +414,13 @@ async def entrypoint(ctx: JobContext) -> None:
     session.on("close", lambda _ev: session_closed.set())
 
     agent = BKAgent(room=ctx.room, mcp_server=mcp_server)
+
+    @session.on("conversation_item_added")
+    def _on_item(ev) -> None:
+        item = ev.item
+        if getattr(item, "type", None) == "message" and item.role == "assistant":
+            agent.note_assistant_message(item.text_content)
+
     await session.start(
         agent=agent,
         room=ctx.room,
@@ -382,7 +452,7 @@ async def entrypoint(ctx: JobContext) -> None:
         t.cancel()
 
     if agent.order_placed and not session_closed.is_set():
-        await asyncio.sleep(4)  # let the goodbye line finish playing
+        await agent.finish_order(session)
         await session.aclose()
     for t in list(background):
         t.cancel()

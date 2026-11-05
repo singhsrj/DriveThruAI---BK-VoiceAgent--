@@ -11,4 +11,15 @@ wheels/
 
 *.venv
 
-voice-agent
+
+# Secrets / local env (any depth)
+.env
+.env.*
+!.env.example
+!env.example
+
+# Virtualenvs and caches
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/

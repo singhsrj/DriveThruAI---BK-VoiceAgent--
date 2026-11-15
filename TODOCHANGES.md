@@ -52,7 +52,7 @@ Detailed plan: [`docs/plans/01-eval-harness.md`](docs/plans/01-eval-harness.md).
 
 - [x] Move the system prompt to `src/prompts.py`, so "prompt changed" is a precise CI path filter.
 - [x] Deterministic menu for tests: a fixture snapshot of the menu (`src/fixtures/`), plus fixture-backed versions of the 10 MCP tools, switched on only under simulation (`src/sim_support.py`).
-- [ ] Grade on final state: `on_simulation_end` checks the placed order (items, quantities, server-computed total) against `expected_order` in the scenario.
+- [x] Grade on final state: `on_simulation_end` checks the placed order (items, quantities, server-computed total) against `expected_order` in the scenario.
 - [ ] Per-call trace: tool calls, tool latency and errors, per-stage metrics, provider fallbacks.
 - [ ] Scenario dataset: about 20 drive-thru scenarios, one complication each, tagged by the stage they stress.
 - [ ] Turn-level LLM tests (LiveKit testing framework plus judges) for tool choice and guardrails.

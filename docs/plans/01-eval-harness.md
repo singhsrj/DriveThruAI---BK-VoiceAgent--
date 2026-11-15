@@ -111,6 +111,10 @@ Original plan:
   - their signatures match `mcp_tools.json` (contract test). The nightly job refreshes the snapshot and fails if the live server's schemas drift.
 
 ### Step 3: Grade on final state
+
+**As built (branch `feat/eval-grading`):** `src/grading.py` holds a pure `grade_order(userdata, receipt, fixture)`; `on_simulation_end` in `agent.py` looks the agent up by simulation job ID (module-level map, so it works even after the session closed), grades its receipt and calls `ctx.fail(" | ".join(reasons))`. It also logs a `SIM_GRADE` line. Checks beyond the plan: `unknown_item` (a name not on the menu), `line_price_mismatch` (line price must be unit × quantity, which catches the "12.33" scale bug). Names match case- and whitespace-insensitively; duplicate lines are merged. A typo in a scenario's `expected_order` raises, and a T0 test validates every scenario in `scenarios.yaml` against the fixture. Under simulation the agent no longer hangs up after an order: it speaks the confirmation and waits (up to 120 s) for the simulator to end the call, so the finalize request reaches a live session. No `BKUserdata` yet; step 4 adds it with the trace.
+
+Original plan:
 - Give the session a typed `userdata` (`BKUserdata`: `receipt`, `trace`). `place_order` writes the receipt there as well as on the agent.
 - `on_simulation_end(ctx)` registered via `@server.rtc_session(on_simulation_end=...)`:
   - `expected_order: null`: fail with `unexpected_order` if an order was placed (guardrail or abandoned-order scenarios).

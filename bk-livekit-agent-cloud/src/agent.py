@@ -41,6 +41,7 @@ from livekit.agents import (
     JobContext,
     JobProcess,
     RunContext,
+    SimulationContext,
     cli,
     function_tool,
     llm,
@@ -52,6 +53,7 @@ from livekit.agents.voice.speech_handle import SpeechHandle
 from livekit.plugins import ai_coustics, assemblyai, cartesia, deepgram, openai, silero
 from loguru import logger
 
+from grading import grade_order
 from monitoring import ProviderMonitor, log_openrouter_credit
 from prompts import GREETING, RETRY_LINE, SYSTEM_PROMPT
 from sim_support import build_menu_tools, load_fixture
@@ -60,6 +62,9 @@ from sim_support import build_menu_tools, load_fixture
 # On LiveKit Cloud the values come from deployed secrets instead.
 load_dotenv(".env.local")
 load_dotenv()
+
+# Upper bound on waiting for the simulator to end a call after an order.
+SIM_END_TIMEOUT_S = 120
 
 MCP_SERVER_URL = os.getenv("MCP_SERVER_URL", "http://65.0.71.171:8943/mcp")
 logger.info(f"MCP_SERVER_URL = {MCP_SERVER_URL}")
@@ -238,6 +243,11 @@ class BKAgent(Agent):
         }
 
     @property
+    def receipt(self) -> dict | None:
+        """The placed order, or None. Graded at the end of a simulation."""
+        return self._receipt
+
+    @property
     def confirmation_line(self) -> str:
         order_id = (self._receipt or {}).get("order_id", "")
         # Spaced out so TTS reads the ID character by character.
@@ -301,8 +311,27 @@ def prewarm(proc: JobProcess) -> None:
 
 server.setup_fnc = prewarm
 
+# Agents under simulation, by simulation job ID, so the grader can read the
+# placed order after the session has ended.
+_sim_agents: dict[str, BKAgent] = {}
 
-@server.rtc_session()
+
+def on_simulation_end(sim: SimulationContext) -> None:
+    """Fail the run if the placed order differs from the scenario's
+    expected_order (see grading.py). Never runs in production."""
+    agent = _sim_agents.pop(sim.simulation_job_id, None)
+    receipt = agent.receipt if agent else None
+    failures = grade_order(sim.userdata(), receipt, load_fixture())
+    logger.info(
+        f"SIM_GRADE job={sim.simulation_job_id} "
+        f"result={'fail' if failures else 'pass'} receipt={json.dumps(receipt)} "
+        f"reasons={json.dumps(failures)}"
+    )
+    if failures:
+        sim.fail(reason=" | ".join(failures))
+
+
+@server.rtc_session(on_simulation_end=on_simulation_end)
 async def entrypoint(ctx: JobContext) -> None:
     logger.info("Starting BK voice agent")
     ctx.log_context_fields = {"room": ctx.room.name}
@@ -380,6 +409,8 @@ async def entrypoint(ctx: JobContext) -> None:
     session.on("close", lambda _ev: session_closed.set())
 
     agent = BKAgent(room=ctx.room, mcp_server=mcp_server, menu_tools=menu_tools)
+    if sim:
+        _sim_agents[sim.simulation_job_id] = agent
 
     @session.on("conversation_item_added")
     def _on_item(ev) -> None:
@@ -420,6 +451,11 @@ async def entrypoint(ctx: JobContext) -> None:
 
     if agent.order_placed and not session_closed.is_set():
         await agent.finish_order(session)
+        if sim:
+            # Let the simulator end the call: it grades the order through
+            # on_simulation_end, which needs this session still connected.
+            with contextlib.suppress(asyncio.TimeoutError):
+                await asyncio.wait_for(session_closed.wait(), SIM_END_TIMEOUT_S)
         await session.aclose()
     for t in list(background):
         t.cancel()

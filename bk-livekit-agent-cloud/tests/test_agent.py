@@ -91,3 +91,12 @@ async def test_detects_llm_spoke_confirmation() -> None:
     spaced = " - ".join(order_id.lower())
     agent.note_assistant_message(f"Confirmed! Your ID is {spaced}.")
     assert agent._goodbye_spoken
+
+
+def test_agent_uses_prompt_module() -> None:
+    import prompts
+
+    assert _agent().instructions == prompts.SYSTEM_PROMPT
+    # Guardrails the simulations rely on must stay in the prompt.
+    for phrase in ("coupon", "never handle payment", "place_order"):
+        assert phrase in prompts.SYSTEM_PROMPT

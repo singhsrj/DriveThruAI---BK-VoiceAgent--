@@ -54,6 +54,7 @@ from loguru import logger
 
 from monitoring import ProviderMonitor, log_openrouter_credit
 from prompts import GREETING, RETRY_LINE, SYSTEM_PROMPT
+from sim_support import build_menu_tools, load_fixture
 
 # Local dev: .env.local (template default), then plain .env as a fallback.
 # On LiveKit Cloud the values come from deployed secrets instead.
@@ -162,16 +163,26 @@ async def keep_mcp_alive(server: mcp.MCPServerHTTP) -> None:
 
 
 class BKAgent(Agent):
-    """The BK ordering assistant, wired to the bk-menu MCP server."""
+    """The BK ordering assistant, wired to the bk-menu MCP server.
+
+    Under simulation, ``menu_tools`` replaces the MCP toolset with
+    fixture-backed tools of the same names and schemas (see sim_support).
+    """
 
     # Topic the frontend listens on for the structured receipt payload.
     ORDER_TOPIC = "bk-order-receipt"
 
-    def __init__(self, room: rtc.Room, mcp_server: mcp.MCPServerHTTP) -> None:
-        super().__init__(
-            instructions=SYSTEM_PROMPT,
-            tools=[mcp.MCPToolset(id="bk-menu", mcp_server=mcp_server)],
-        )
+    def __init__(
+        self,
+        room: rtc.Room,
+        mcp_server: mcp.MCPServerHTTP | None = None,
+        menu_tools: list[llm.Tool | llm.Toolset] | None = None,
+    ) -> None:
+        if menu_tools is None:
+            if mcp_server is None:
+                raise ValueError("BKAgent needs mcp_server or menu_tools")
+            menu_tools = [mcp.MCPToolset(id="bk-menu", mcp_server=mcp_server)]
+        super().__init__(instructions=SYSTEM_PROMPT, tools=menu_tools)
         self._room = room
         self.order_placed = False
         self.order_done = asyncio.Event()
@@ -297,11 +308,24 @@ async def entrypoint(ctx: JobContext) -> None:
     ctx.log_context_fields = {"room": ctx.room.name}
     await ctx.connect()
 
-    mcp_server = mcp.MCPServerHTTP(
-        MCP_SERVER_URL,
-        timeout=10,  # connect timeout (default 5s is tight for a remote DB host)
-        client_session_timeout_seconds=15,  # per tool-call read timeout
-    )
+    # Simulations serve the menu from a frozen fixture unless the scenario
+    # opts out with `userdata: {menu: live}`. Production never has a
+    # simulation context, so it always uses the live MCP server.
+    sim = ctx.simulation_context()
+    scenario = sim.userdata() if sim else {}
+    mcp_server: mcp.MCPServerHTTP | None = None
+    menu_tools: list[llm.Tool | llm.Toolset] | None = None
+    if sim and scenario.get("menu") != "live":
+        menu_tools = build_menu_tools(
+            load_fixture(unavailable_items=scenario.get("unavailable_items"))
+        )
+        logger.info(f"Simulation {sim.simulation_job_id}: fixture menu")
+    else:
+        mcp_server = mcp.MCPServerHTTP(
+            MCP_SERVER_URL,
+            timeout=10,  # connect timeout (default 5s is tight for a remote DB host)
+            client_session_timeout_seconds=15,  # per tool-call read timeout
+        )
     llm_chain = build_llm()
     stt_chain = build_stt()
     tts_chain = build_tts()
@@ -355,7 +379,7 @@ async def entrypoint(ctx: JobContext) -> None:
     session_closed = asyncio.Event()
     session.on("close", lambda _ev: session_closed.set())
 
-    agent = BKAgent(room=ctx.room, mcp_server=mcp_server)
+    agent = BKAgent(room=ctx.room, mcp_server=mcp_server, menu_tools=menu_tools)
 
     @session.on("conversation_item_added")
     def _on_item(ev) -> None:
@@ -376,7 +400,8 @@ async def entrypoint(ctx: JobContext) -> None:
             ),
         ),
     )
-    _spawn(keep_mcp_alive(mcp_server))
+    if mcp_server is not None:
+        _spawn(keep_mcp_alive(mcp_server))
 
     # session.say() goes straight to TTS (no LLM), so the opening line
     # works with any model and doesn't depend on a prior user message.

@@ -1,0 +1,275 @@
+[
+  {
+    "description": "List items within a calorie range. Useful for \"low calorie\" / \"under X cal\" queries.",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "available_only": {
+          "default": true,
+          "description": "If True (default), only return currently available items.",
+          "type": "boolean"
+        },
+        "limit": {
+          "default": 50,
+          "description": "Max rows to return (default 50, capped at 200).",
+          "type": "integer"
+        },
+        "max_calories": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum calories (inclusive). Omit for no upper bound."
+        },
+        "min_calories": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum calories (inclusive). Omit for no lower bound."
+        }
+      },
+      "type": "object"
+    },
+    "name": "filter_items_by_calories"
+  },
+  {
+    "description": "List items within a price range (base item price, not size variants).",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "available_only": {
+          "default": true,
+          "description": "If True (default), only return currently available items.",
+          "type": "boolean"
+        },
+        "limit": {
+          "default": 50,
+          "description": "Max rows to return (default 50, capped at 200).",
+          "type": "integer"
+        },
+        "max_price": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Maximum price (inclusive). Omit for no upper bound."
+        },
+        "min_price": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Minimum price (inclusive). Omit for no lower bound."
+        }
+      },
+      "type": "object"
+    },
+    "name": "filter_items_by_price"
+  },
+  {
+    "description": "Get full details for a single combo (by its id + veg variant), including its line items.",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "combo_id": {
+          "description": "The combo family id.",
+          "type": "integer"
+        },
+        "is_veg": {
+          "description": "Whether to fetch the veg (True) or non-veg (False) variant of this combo.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "combo_id",
+        "is_veg"
+      ],
+      "type": "object"
+    },
+    "name": "get_combo"
+  },
+  {
+    "description": "List items with at least a given amount of protein, sorted highest first.",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "available_only": {
+          "default": true,
+          "description": "If True (default), only return currently available items.",
+          "type": "boolean"
+        },
+        "limit": {
+          "default": 20,
+          "description": "Max rows to return (default 20, capped at 100).",
+          "type": "integer"
+        },
+        "min_protein_g": {
+          "default": 15.0,
+          "description": "Minimum grams of protein (default 15g).",
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "name": "get_high_protein_items"
+  },
+  {
+    "description": "Get full details for a single menu item by id, including its size/price variants.",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "item_id": {
+          "description": "The item's numeric id.",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "item_id"
+      ],
+      "type": "object"
+    },
+    "name": "get_item"
+  },
+  {
+    "description": "Get overall menu stats: item count, combo count, price range, category breakdown.",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
+    "name": "get_menu_stats"
+  },
+  {
+    "description": "List all menu categories (id and name).",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {},
+      "type": "object"
+    },
+    "name": "list_categories"
+  },
+  {
+    "description": "List combo meals, optionally filtered by veg status.",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "available_only": {
+          "default": true,
+          "description": "If True (default), only return currently available combos.",
+          "type": "boolean"
+        },
+        "is_veg": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, filter to veg-only (True) or non-veg-only (False) combos."
+        },
+        "limit": {
+          "default": 50,
+          "description": "Max rows to return (default 50, capped at 200).",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "name": "list_combos"
+  },
+  {
+    "description": "List menu items, optionally filtered by category name and/or veg status.",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "available_only": {
+          "default": true,
+          "description": "If True (default), only return currently available items.",
+          "type": "boolean"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Category name to filter by (case-insensitive exact match), e.g. \"Burgers\"."
+        },
+        "is_veg": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, filter to veg-only (True) or non-veg-only (False) items."
+        },
+        "limit": {
+          "default": 50,
+          "description": "Max rows to return (default 50, capped at 200).",
+          "type": "integer"
+        },
+        "offset": {
+          "default": 0,
+          "description": "Row offset for pagination.",
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "name": "list_items"
+  },
+  {
+    "description": "Search menu items by name (case-insensitive partial match).",
+    "input_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "limit": {
+          "default": 20,
+          "description": "Max rows to return (default 20, capped at 100).",
+          "type": "integer"
+        },
+        "query": {
+          "description": "Text to search for within item names.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    },
+    "name": "search_items"
+  }
+]

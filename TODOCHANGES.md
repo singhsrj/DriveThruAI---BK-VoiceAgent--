@@ -44,14 +44,14 @@ Fix each on its own `fix/…` branch, with a scenario that reproduces it.
 
 - [ ] **Combo price in the wrong currency and scale** (production run `SR_AMDAose6mksx`): the ₹1,233 veg combo for 4 was quoted as "$12.33", twice. Fix: state the currency (INR, ₹) in the prompt and/or return a currency and a formatted price from `bk-menu-mcp`. Add a price-grounding check (feature 1, step 7).
 - [ ] **Invented combo contents:** `list_combos` returns `items: null`, and the agent described the contents without calling `get_combo`. Fix: tell the agent to call `get_combo` before describing a combo, or include items in `list_combos`.
-- [ ] **`get_item` / `get_combo` return `None` for an unknown ID**, which LiveKit reports as "tool completed without producing a result"; the order flow died on it (local run). Fix: return `{"error": "not found", ...}` from `bk-menu-mcp`.
+- [ ] **Empty results break the tool call:** `get_item` / `get_combo` with an unknown ID return `None`, and every list tool returns `[]` when nothing matches (e.g. `search_items("sushi")`). FastMCP sends no content for either, which LiveKit reports as "tool completed without producing a result"; the order flow died on it (local run). Fix in `bk-menu-mcp`: return `{"error": "not found"}` / `{"results": []}`, then re-snapshot the fixture. The simulation fakes reproduce this bug on purpose until then.
 
 ## 1. Testing and regression checks — `feat/eval-harness`
 
 Detailed plan: [`docs/plans/01-eval-harness.md`](docs/plans/01-eval-harness.md).
 
-- [ ] Move the system prompt to `src/prompts.py`, so "prompt changed" is a precise CI path filter.
-- [ ] Deterministic menu for tests: a fixture snapshot of the menu, plus mocks for the 10 MCP tools (`mock_tools`), switched on only under simulation.
+- [x] Move the system prompt to `src/prompts.py`, so "prompt changed" is a precise CI path filter.
+- [x] Deterministic menu for tests: a fixture snapshot of the menu (`src/fixtures/`), plus fixture-backed versions of the 10 MCP tools, switched on only under simulation (`src/sim_support.py`).
 - [ ] Grade on final state: `on_simulation_end` checks the placed order (items, quantities, server-computed total) against `expected_order` in the scenario.
 - [ ] Per-call trace: tool calls, tool latency and errors, per-stage metrics, provider fallbacks.
 - [ ] Scenario dataset: about 20 drive-thru scenarios, one complication each, tagged by the stage they stress.

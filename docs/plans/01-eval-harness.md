@@ -96,6 +96,10 @@ Each step is one commit on `feat/eval-harness`, and the T0 tests pass after ever
 - CI path filters can then say precisely "prompt changed" (`src/prompts.py`) vs "code changed".
 
 ### Step 2: Deterministic menu under simulation
+
+**As built (branch `feat/eval-fixtures`):** instead of `mock_tools` over a live `MCPToolset`, the agent gets ten local raw function tools under simulation, built from `src/fixtures/mcp_tools.json` (exact server names, descriptions and schemas) and answering from `src/fixtures/menu.json`. This removes the live MCP server from simulation runs entirely (the first risk below). Fixtures live in `src/` because `.dockerignore` excludes `evals/` and the staging agent needs them at runtime. Results are formatted exactly like LiveKit's MCP resolver output, including the empty-result ToolError. `evals/scripts/snapshot_menu.py --check` fails on schema/menu drift and replays 15 calls against the live server, comparing output byte for byte (order-insensitive only among ties, which Postgres orders unstably). Scenario `userdata`: `menu: live` opts out; `unavailable_items: [names]` marks items out of stock.
+
+Original plan:
 - `evals/scripts/snapshot_menu.py`: calls the live `bk-menu-mcp` tools once and writes `evals/fixtures/menu.json` (categories, items, sizes, combos with their items). Also writes `evals/fixtures/mcp_tools.json` (tool names and input schemas).
 - `src/sim_support.py`:
   - `load_fixture()`.

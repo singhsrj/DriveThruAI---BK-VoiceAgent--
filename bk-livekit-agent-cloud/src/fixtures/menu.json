@@ -1,0 +1,1902 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "name": "BK Cafe"
+    },
+    {
+      "id": 2,
+      "name": "Burgers & Wraps"
+    },
+    {
+      "id": 3,
+      "name": "Snacks"
+    },
+    {
+      "id": 4,
+      "name": "Beverages"
+    },
+    {
+      "id": 5,
+      "name": "Desserts"
+    }
+  ],
+  "combos": [
+    {
+      "id": 1,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 1
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 1
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 1
+        }
+      ],
+      "name": "Classic Combo for 1 (Non-Veg)",
+      "num_people": 1,
+      "price": 351.0
+    },
+    {
+      "id": 1,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 1
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 1
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 1
+        }
+      ],
+      "name": "Classic Combo for 1 (Veg)",
+      "num_people": 1,
+      "price": 306.0
+    },
+    {
+      "id": 2,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 1
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 1
+        }
+      ],
+      "name": "Value Combo for 1 (Non-Veg)",
+      "num_people": 1,
+      "price": 270.0
+    },
+    {
+      "id": 2,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 1
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 1
+        }
+      ],
+      "name": "Value Combo for 1 (Veg)",
+      "num_people": 1,
+      "price": 225.0
+    },
+    {
+      "id": 3,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 1
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 1
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 1
+        },
+        {
+          "item_id": 78,
+          "name": "(9Pc) Crunchy Chicken Nuggets + 2 Dips",
+          "quantity": 1
+        }
+      ],
+      "name": "Feast Combo for 1 (Non-Veg)",
+      "num_people": 1,
+      "price": 504.0
+    },
+    {
+      "id": 3,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 1
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 1
+        },
+        {
+          "item_id": 68,
+          "name": "Veggie Strips - 5 Pcs",
+          "quantity": 1
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 1
+        }
+      ],
+      "name": "Feast Combo for 1 (Veg)",
+      "num_people": 1,
+      "price": 387.0
+    },
+    {
+      "id": 4,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 1
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 1
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 1
+        },
+        {
+          "item_id": 85,
+          "name": "Choco Lava Cake",
+          "quantity": 1
+        }
+      ],
+      "name": "Party Combo for 1 (Non-Veg)",
+      "num_people": 1,
+      "price": 423.0
+    },
+    {
+      "id": 4,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 1
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 1
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 1
+        },
+        {
+          "item_id": 85,
+          "name": "Choco Lava Cake",
+          "quantity": 1
+        }
+      ],
+      "name": "Party Combo for 1 (Veg)",
+      "num_people": 1,
+      "price": 387.0
+    },
+    {
+      "id": 5,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 2
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 2
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 2
+        }
+      ],
+      "name": "Classic Combo for 2 (Non-Veg)",
+      "num_people": 2,
+      "price": 702.0
+    },
+    {
+      "id": 5,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 2
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 2
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 2
+        }
+      ],
+      "name": "Classic Combo for 2 (Veg)",
+      "num_people": 2,
+      "price": 621.0
+    },
+    {
+      "id": 6,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 2
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 2
+        }
+      ],
+      "name": "Value Combo for 2 (Non-Veg)",
+      "num_people": 2,
+      "price": 540.0
+    },
+    {
+      "id": 6,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 2
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 2
+        }
+      ],
+      "name": "Value Combo for 2 (Veg)",
+      "num_people": 2,
+      "price": 459.0
+    },
+    {
+      "id": 7,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 2
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 2
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 2
+        },
+        {
+          "item_id": 78,
+          "name": "(9Pc) Crunchy Chicken Nuggets + 2 Dips",
+          "quantity": 2
+        }
+      ],
+      "name": "Feast Combo for 2 (Non-Veg)",
+      "num_people": 2,
+      "price": 1008.0
+    },
+    {
+      "id": 7,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 2
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 2
+        },
+        {
+          "item_id": 68,
+          "name": "Veggie Strips - 5 Pcs",
+          "quantity": 2
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 2
+        }
+      ],
+      "name": "Feast Combo for 2 (Veg)",
+      "num_people": 2,
+      "price": 765.0
+    },
+    {
+      "id": 8,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 2
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 2
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 2
+        },
+        {
+          "item_id": 85,
+          "name": "Choco Lava Cake",
+          "quantity": 2
+        }
+      ],
+      "name": "Party Combo for 2 (Non-Veg)",
+      "num_people": 2,
+      "price": 855.0
+    },
+    {
+      "id": 8,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 2
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 2
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 2
+        },
+        {
+          "item_id": 85,
+          "name": "Choco Lava Cake",
+          "quantity": 2
+        }
+      ],
+      "name": "Party Combo for 2 (Veg)",
+      "num_people": 2,
+      "price": 765.0
+    },
+    {
+      "id": 9,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 3
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 3
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 3
+        }
+      ],
+      "name": "Classic Combo for 3 (Non-Veg)",
+      "num_people": 3,
+      "price": 1053.0
+    },
+    {
+      "id": 9,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 3
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 3
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 3
+        }
+      ],
+      "name": "Classic Combo for 3 (Veg)",
+      "num_people": 3,
+      "price": 927.0
+    },
+    {
+      "id": 10,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 3
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 3
+        }
+      ],
+      "name": "Value Combo for 3 (Non-Veg)",
+      "num_people": 3,
+      "price": 810.0
+    },
+    {
+      "id": 10,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 3
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 3
+        }
+      ],
+      "name": "Value Combo for 3 (Veg)",
+      "num_people": 3,
+      "price": 684.0
+    },
+    {
+      "id": 11,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 3
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 3
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 3
+        },
+        {
+          "item_id": 78,
+          "name": "(9Pc) Crunchy Chicken Nuggets + 2 Dips",
+          "quantity": 3
+        }
+      ],
+      "name": "Feast Combo for 3 (Non-Veg)",
+      "num_people": 3,
+      "price": 1512.0
+    },
+    {
+      "id": 11,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 3
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 3
+        },
+        {
+          "item_id": 68,
+          "name": "Veggie Strips - 5 Pcs",
+          "quantity": 3
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 3
+        }
+      ],
+      "name": "Feast Combo for 3 (Veg)",
+      "num_people": 3,
+      "price": 1152.0
+    },
+    {
+      "id": 12,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 3
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 3
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 3
+        },
+        {
+          "item_id": 85,
+          "name": "Choco Lava Cake",
+          "quantity": 3
+        }
+      ],
+      "name": "Party Combo for 3 (Non-Veg)",
+      "num_people": 3,
+      "price": 1278.0
+    },
+    {
+      "id": 12,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 3
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 3
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 3
+        },
+        {
+          "item_id": 85,
+          "name": "Choco Lava Cake",
+          "quantity": 3
+        }
+      ],
+      "name": "Party Combo for 3 (Veg)",
+      "num_people": 3,
+      "price": 1152.0
+    },
+    {
+      "id": 13,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 4
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 4
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 4
+        }
+      ],
+      "name": "Classic Combo for 4 (Non-Veg)",
+      "num_people": 4,
+      "price": 1404.0
+    },
+    {
+      "id": 13,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 4
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 4
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 4
+        }
+      ],
+      "name": "Classic Combo for 4 (Veg)",
+      "num_people": 4,
+      "price": 1233.0
+    },
+    {
+      "id": 14,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 4
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 4
+        }
+      ],
+      "name": "Value Combo for 4 (Non-Veg)",
+      "num_people": 4,
+      "price": 1080.0
+    },
+    {
+      "id": 14,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 4
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 4
+        }
+      ],
+      "name": "Value Combo for 4 (Veg)",
+      "num_people": 4,
+      "price": 909.0
+    },
+    {
+      "id": 15,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 4
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 4
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 4
+        },
+        {
+          "item_id": 78,
+          "name": "(9Pc) Crunchy Chicken Nuggets + 2 Dips",
+          "quantity": 4
+        }
+      ],
+      "name": "Feast Combo for 4 (Non-Veg)",
+      "num_people": 4,
+      "price": 2016.0
+    },
+    {
+      "id": 15,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 4
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 4
+        },
+        {
+          "item_id": 68,
+          "name": "Veggie Strips - 5 Pcs",
+          "quantity": 4
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 4
+        }
+      ],
+      "name": "Feast Combo for 4 (Veg)",
+      "num_people": 4,
+      "price": 1539.0
+    },
+    {
+      "id": 16,
+      "is_available": true,
+      "is_veg": false,
+      "items": [
+        {
+          "item_id": 44,
+          "name": "Chicken Whopper Deluxe",
+          "quantity": 4
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 4
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 4
+        },
+        {
+          "item_id": 85,
+          "name": "Choco Lava Cake",
+          "quantity": 4
+        }
+      ],
+      "name": "Party Combo for 4 (Non-Veg)",
+      "num_people": 4,
+      "price": 1710.0
+    },
+    {
+      "id": 16,
+      "is_available": true,
+      "is_veg": true,
+      "items": [
+        {
+          "item_id": 28,
+          "name": "Veg Whopper Deluxe",
+          "quantity": 4
+        },
+        {
+          "item_id": 53,
+          "name": "Coca Cola Medium",
+          "quantity": 4
+        },
+        {
+          "item_id": 71,
+          "name": "Fries (Medium)",
+          "quantity": 4
+        },
+        {
+          "item_id": 85,
+          "name": "Choco Lava Cake",
+          "quantity": 4
+        }
+      ],
+      "name": "Party Combo for 4 (Veg)",
+      "num_people": 4,
+      "price": 1539.0
+    }
+  ],
+  "currency": "INR",
+  "items": [
+    {
+      "calories": 10,
+      "category_id": 1,
+      "id": 1,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Iced Americano",
+      "piece_count": 1,
+      "price": 180.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 220,
+      "category_id": 1,
+      "id": 2,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Classic Cold Coffee",
+      "piece_count": 1,
+      "price": 199.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 11,
+      "category_id": 1,
+      "id": 3,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Americano (Small)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 15,
+      "category_id": 1,
+      "id": 4,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Americano (Regular)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 201,
+      "category_id": 1,
+      "id": 5,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Cappuccino (Small)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 229,
+      "category_id": 1,
+      "id": 6,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Cappuccino (Regular)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 1,
+      "id": 7,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Cafe Latte (Small)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 186,
+      "category_id": 1,
+      "id": 8,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Cafe Latte (Regular)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 246,
+      "category_id": 1,
+      "id": 9,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Mocha Cappuccino (Small)",
+      "piece_count": 1,
+      "price": 179.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 329,
+      "category_id": 1,
+      "id": 10,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Mocha Cappuccino (Regular)",
+      "piece_count": 1,
+      "price": 229.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 328,
+      "category_id": 1,
+      "id": 11,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Mocha Frappe",
+      "piece_count": 1,
+      "price": 269.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 209,
+      "category_id": 1,
+      "id": 12,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Hot Chocolate",
+      "piece_count": 1,
+      "price": 179.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 496,
+      "category_id": 1,
+      "id": 13,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Chocolate Thickshake (Cafe)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 395,
+      "category_id": 1,
+      "id": 14,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Mango Thickshake (Cafe)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 476,
+      "category_id": 1,
+      "id": 15,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Berry Blast Thickshake (Cafe)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 349,
+      "category_id": 1,
+      "id": 16,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Choco Lava Cup",
+      "piece_count": 1,
+      "price": 119.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 89,
+      "category_id": 1,
+      "id": 17,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Masala Chai",
+      "piece_count": 1,
+      "price": 109.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 146,
+      "category_id": 1,
+      "id": 18,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Iced Latte",
+      "piece_count": 1,
+      "price": 199.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 1,
+      "id": 19,
+      "is_available": true,
+      "is_veg": true,
+      "name": "BK Fusion Shake (Made With KitKat)",
+      "piece_count": 1,
+      "price": 279.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 382,
+      "category_id": 2,
+      "id": 20,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Crispy Veg Burger",
+      "piece_count": 1,
+      "price": 89.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 624,
+      "category_id": 2,
+      "id": 21,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Crispy Veg Double Patty Burger",
+      "piece_count": 1,
+      "price": 99.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 359,
+      "category_id": 2,
+      "id": 22,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Veg Makhani Burst Burger",
+      "piece_count": 1,
+      "price": 89.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 359,
+      "category_id": 2,
+      "id": 23,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Veg Makhani Burst Double Patty Burger",
+      "piece_count": 1,
+      "price": 79.0,
+      "protein_g": 10.3,
+      "sizes": []
+    },
+    {
+      "calories": 234,
+      "category_id": 2,
+      "id": 24,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Veg Crunchy Taco",
+      "piece_count": 1,
+      "price": 90.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 328,
+      "category_id": 2,
+      "id": 25,
+      "is_available": true,
+      "is_veg": true,
+      "name": "BK Veggie Burger",
+      "piece_count": 1,
+      "price": 99.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 26,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Crispy Veg Double Patty Burger With Cheese",
+      "piece_count": 1,
+      "price": 99.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 27,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Crispy Veg Burger With Cheese",
+      "piece_count": 1,
+      "price": 98.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 656,
+      "category_id": 2,
+      "id": 28,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Veg Whopper Deluxe",
+      "piece_count": 1,
+      "price": 149.0,
+      "protein_g": 14.1,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 29,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Veg Whopper Deluxe With Cheese",
+      "piece_count": 1,
+      "price": 174.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 30,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Paneer Whopper Deluxe",
+      "piece_count": 1,
+      "price": 199.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 31,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Cheese Whopper Deluxe",
+      "piece_count": 1,
+      "price": 199.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 575,
+      "category_id": 2,
+      "id": 32,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Paneer Royale Wrap",
+      "piece_count": 1,
+      "price": 229.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 33,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Veg Whopper Deluxe Double Patty",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 34,
+      "is_available": true,
+      "is_veg": true,
+      "name": "BK Veggie Double Patty Burger",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 662,
+      "category_id": 2,
+      "id": 35,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Hot 'N' Cheesy Burger",
+      "piece_count": 1,
+      "price": 299.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 36,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Crispy Chicken Burger",
+      "piece_count": 1,
+      "price": 99.0,
+      "protein_g": 21.4,
+      "sizes": []
+    },
+    {
+      "calories": 559,
+      "category_id": 2,
+      "id": 37,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Crispy Chicken Double Patty Burger",
+      "piece_count": 1,
+      "price": 129.0,
+      "protein_g": 20.4,
+      "sizes": []
+    },
+    {
+      "calories": 298,
+      "category_id": 2,
+      "id": 38,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Chicken Makhani Burst Burger",
+      "piece_count": 1,
+      "price": 100.0,
+      "protein_g": 13.2,
+      "sizes": []
+    },
+    {
+      "calories": 928,
+      "category_id": 2,
+      "id": 39,
+      "is_available": true,
+      "is_veg": false,
+      "name": "BK Chicken Burger",
+      "piece_count": 1,
+      "price": 149.0,
+      "protein_g": 13.3,
+      "sizes": []
+    },
+    {
+      "calories": 262,
+      "category_id": 2,
+      "id": 40,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Crunchy Chicken Taco",
+      "piece_count": 1,
+      "price": 118.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 41,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Crispy Chicken Double Patty Burger With Cheese",
+      "piece_count": 1,
+      "price": 124.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 928,
+      "category_id": 2,
+      "id": 42,
+      "is_available": true,
+      "is_veg": false,
+      "name": "BK Chicken Burger With Cheese",
+      "piece_count": 1,
+      "price": 164.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 389,
+      "category_id": 2,
+      "id": 43,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Grill Chicken Whopper Deluxe",
+      "piece_count": 1,
+      "price": 199.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 44,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Chicken Whopper Deluxe",
+      "piece_count": 1,
+      "price": 199.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 2,
+      "id": 45,
+      "is_available": true,
+      "is_veg": false,
+      "name": "BK Chicken Double Patty Burger",
+      "piece_count": 1,
+      "price": 179.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 492,
+      "category_id": 2,
+      "id": 46,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Grill Chicken Whopper Deluxe With Cheese",
+      "piece_count": 1,
+      "price": 204.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 431,
+      "category_id": 2,
+      "id": 47,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Crunchy Chicken Wrap",
+      "piece_count": 1,
+      "price": 229.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 678,
+      "category_id": 2,
+      "id": 48,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Grill Chicken Whopper Deluxe Double Patty",
+      "piece_count": 1,
+      "price": 269.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 588,
+      "category_id": 2,
+      "id": 49,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Fiery Chicken Burger",
+      "piece_count": 1,
+      "price": 299.0,
+      "protein_g": 16.3,
+      "sizes": []
+    },
+    {
+      "calories": 1023,
+      "category_id": 2,
+      "id": 50,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Chicken Tandoori Burger",
+      "piece_count": 1,
+      "price": 299.0,
+      "protein_g": 26.1,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 4,
+      "id": 51,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Coke",
+      "piece_count": 1,
+      "price": 79.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 4,
+      "id": 52,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Masala Fizz",
+      "piece_count": 1,
+      "price": 129.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 190,
+      "category_id": 4,
+      "id": 53,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Coca Cola Medium",
+      "piece_count": 1,
+      "price": 95.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 4,
+      "id": 54,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Tropical Fizz",
+      "piece_count": 1,
+      "price": 129.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 243,
+      "category_id": 4,
+      "id": 55,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Fanta Medium",
+      "piece_count": 1,
+      "price": 95.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 214,
+      "category_id": 4,
+      "id": 56,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Sprite Medium",
+      "piece_count": 1,
+      "price": 95.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 189,
+      "category_id": 4,
+      "id": 57,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Medium Thums Up",
+      "piece_count": 1,
+      "price": 95.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 496,
+      "category_id": 4,
+      "id": 58,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Chocolate Thick Shake",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 496,
+      "category_id": 4,
+      "id": 59,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Mango Thick Shake",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 474,
+      "category_id": 4,
+      "id": 60,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Berry Blast Thick Shake",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 4,
+      "id": 61,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Schweppes Water Bottle",
+      "piece_count": 1,
+      "price": 67.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 4,
+      "id": 62,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Medium Coca Cola Zero",
+      "piece_count": 1,
+      "price": 95.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 340,
+      "category_id": 3,
+      "id": 63,
+      "is_available": true,
+      "is_veg": true,
+      "name": "French Fries",
+      "piece_count": 1,
+      "price": 89.0,
+      "protein_g": 4.0,
+      "sizes": []
+    },
+    {
+      "calories": 310,
+      "category_id": 3,
+      "id": 64,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Onion Rings",
+      "piece_count": 1,
+      "price": 99.0,
+      "protein_g": 3.5,
+      "sizes": []
+    },
+    {
+      "calories": 280,
+      "category_id": 3,
+      "id": 65,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Chicken Nuggets (6pc)",
+      "piece_count": 6,
+      "price": 149.0,
+      "protein_g": 16.0,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 66,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Regular Fries",
+      "piece_count": 1,
+      "price": 89.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 208,
+      "category_id": 3,
+      "id": 67,
+      "is_available": true,
+      "is_veg": true,
+      "name": "BK Veg Pizza Puff",
+      "piece_count": 1,
+      "price": 89.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 256,
+      "category_id": 3,
+      "id": 68,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Veggie Strips - 5 Pcs",
+      "piece_count": 5,
+      "price": 89.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 169,
+      "category_id": 3,
+      "id": 69,
+      "is_available": true,
+      "is_veg": false,
+      "name": "(4Pc) Crunchy Chicken Nuggets",
+      "piece_count": 4,
+      "price": 109.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 70,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Crunchy Chicken Nuggets (4pcs) Fiery",
+      "piece_count": 4,
+      "price": 99.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 333,
+      "category_id": 3,
+      "id": 71,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Fries (Medium)",
+      "piece_count": 1,
+      "price": 119.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 499,
+      "category_id": 3,
+      "id": 72,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Fries (King)",
+      "piece_count": 1,
+      "price": 139.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 73,
+      "is_available": true,
+      "is_veg": true,
+      "name": "King Fries",
+      "piece_count": 1,
+      "price": 99.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 349,
+      "category_id": 3,
+      "id": 74,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Peri Peri Fries (Medium)",
+      "piece_count": 1,
+      "price": 144.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 75,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Medium Peri Peri Fries",
+      "piece_count": 1,
+      "price": 99.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 463,
+      "category_id": 3,
+      "id": 76,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Peri Peri Fries (King)",
+      "piece_count": 1,
+      "price": 189.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": 561,
+      "category_id": 3,
+      "id": 77,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Saucy Fries",
+      "piece_count": 1,
+      "price": 148.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 78,
+      "is_available": true,
+      "is_veg": false,
+      "name": "(9Pc) Crunchy Chicken Nuggets + 2 Dips",
+      "piece_count": 9,
+      "price": 179.0,
+      "protein_g": 20.5,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 79,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Chicken Wings - 3pc Fried",
+      "piece_count": 3,
+      "price": 109.0,
+      "protein_g": 15.4,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 80,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Boneless Wings - Regular",
+      "piece_count": 1,
+      "price": 169.0,
+      "protein_g": 18.4,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 81,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Boneless Wings - Large",
+      "piece_count": 1,
+      "price": 289.0,
+      "protein_g": 30.2,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 82,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Masala Hashbrown",
+      "piece_count": 1,
+      "price": 99.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 83,
+      "is_available": true,
+      "is_veg": false,
+      "name": "(6Pc) Crunchy Chicken Nuggets + 1 Dip",
+      "piece_count": 6,
+      "price": 149.0,
+      "protein_g": null,
+      "sizes": []
+    },
+    {
+      "calories": null,
+      "category_id": 3,
+      "id": 84,
+      "is_available": true,
+      "is_veg": false,
+      "name": "Chicken Wings - 4pc Fried",
+      "piece_count": 4,
+      "price": 209.0,
+      "protein_g": 15.7,
+      "sizes": []
+    },
+    {
+      "calories": 310,
+      "category_id": 5,
+      "id": 85,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Choco Lava Cake",
+      "piece_count": 1,
+      "price": 89.0,
+      "protein_g": 4.0,
+      "sizes": []
+    },
+    {
+      "calories": 480,
+      "category_id": 5,
+      "id": 86,
+      "is_available": true,
+      "is_veg": true,
+      "name": "Oreo Shake",
+      "piece_count": 1,
+      "price": 129.0,
+      "protein_g": 9.0,
+      "sizes": []
+    }
+  ],
+  "source": "bk-menu-mcp"
+}

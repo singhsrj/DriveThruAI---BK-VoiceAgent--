@@ -73,6 +73,24 @@ Each step is one commit on `feat/eval-harness`, and the T0 tests pass after ever
   2. `on_simulation_end` still fires after our entrypoint calls `session.aclose()` and `ctx.shutdown()` once the order is placed.
   3. What `lk agent simulate export` actually contains. **Save one real export**; the analyzer is written against it, not against guessed fields.
 
+#### Step 0 results (2026-11-16)
+
+- **CLI** upgraded to 2.19.3. `--samples`, `--pass-rate`, `--concurrency` and `--agent-name` are available. The default `--pass-rate 0.75` already means 2 of 3 samples, so no override is needed.
+- **Scenario IDs** were added by the CLI (`SCNG_H3aCdHaDPEQq` and one `SCN_…` per scenario).
+- **Local runs on Windows are unreliable.** Cold agent startup is about 21 s (imports alone take 6–12 s), above the CLI's 20 s registration limit. With 6 concurrent jobs, job processes miss the 10 s room-connect limit, and the run produces empty conversations. One of those conversations, with **0 turns**, was still judged a pass.
+- **Production run** (`SR_AMDAose6mksx`, `--agent-name ""` against deployed commit `7ae8424`, concurrency 3): 6/6 passed, all real conversations (2–3 turns, 12–25 s), 16 text turns in total.
+- **But a judged pass is not a correct pass:** in the veg-combo scenario the agent quoted the ₹1,233 combo as "$12.33" and invented its contents (`list_combos` returns `items: null`, and `get_combo` was never called). The judge passed it.
+- **Assumption 1 (text mode):** works. The greeting via `session.say` and the order flow complete in text mode.
+- **Assumption 2 (state after shutdown):** partly confirmed. The order scenario ends with `END_REASON_AGENT_ENDED` after `place_order`, and its full history is still captured. `on_simulation_end` itself is untested until the hook exists.
+- **Assumption 3 (export):** confirmed, and richer than expected. Read it as **UTF-8** (it contains ₹ and typographic quotes).
+  - `run.jobs[]`: `status`, `scenario_id`, `sample`, `usage.text_turns_count`, `metrics` {`task_completion`, `overall_score`, `llm.ttft_ms`, `llm.tokens_per_second`, `conciseness`, `unnecessary_tool_calls`, `information_loss`, `redundant_statements`, `poor_question_quality`, `conversation_progression`, `end_reason`, `turns` (empty in text mode)}.
+  - `summary.chat_history[job_id].items[]`: `message`, `function_call`, `function_call_output`, `agent_handoff`, `agent_config_update`. Full transcripts with tool calls and results.
+  - `summary`: `going_well`, `to_improve`, `issues[]` (with `<ref job item>` links).
+
+**Consequences for the plan:**
+- Simulations target a deployed agent, not a local worker: production (`--agent-name ""`) for baselines, and a **staging agent** for branch code (step 8).
+- The analyzer gets two deterministic checks that the judge lacks (step 7): **minimum turns** (0–1 turns is always a failure) and **price grounding** (every amount the agent says must match a tool-result price or a sum of them, in ₹).
+
 ### Step 1: Extract the prompt
 - Move `SYSTEM_PROMPT` to `src/prompts.py`. No behavior change.
 - CI path filters can then say precisely "prompt changed" (`src/prompts.py`) vs "code changed".
@@ -150,6 +168,11 @@ For each failed simulation, assign **one primary stage**, checking in this order
 
 Text-mode runs can only produce infra, tool or llm.
 
+Deterministic checks that run on every conversation, whatever the judge's verdict (found in step 0):
+- **Minimum turns:** fewer than 2 text turns means `infra` failure. Catches empty conversations that the judge passes.
+- **Price grounding:** extract every amount the agent says from `chat_history`. Each must equal a `price` in an earlier tool result, or a sum of them, and be stated in ₹. Otherwise it is an `llm` failure with the said vs. expected amounts. Catches the "$12.33 for ₹1,233" class of bug.
+- **Grounded descriptions:** if the agent describes a combo's contents, a `get_combo` result for it must appear earlier in the conversation.
+
 Outputs go to `evals/reports/<date>-<sha>/`:
 - `report.md`: pass@k / pass^k, task completion, failures by stage with evidence, p50/p95 perceived and per-stage latency, turn-taking metrics, WER and entity recall.
 - `summary.json`, also appended to `evals/history.jsonl`.
@@ -163,7 +186,8 @@ T0 tests run the analyzer on the saved real export from step 0, sanitized.
 - **`agent-ci.yml`** (PRs touching `bk-livekit-agent-cloud/**`, `evals/**`):
   - Existing ruff + offline pytest (`-m "not llm"`).
   - `llm` job: T1 tests.
-  - `simulate-text` job: `lk agent simulate text --scenarios scenarios.yaml --samples 3 --pass-rate 0.66` (2 of 3 samples must pass), then export → analyze → job summary.
+  - `simulate-text` job: deploy the branch to the **staging agent**, then `lk agent simulate text --scenarios scenarios.yaml --agent-name bk-staging --samples 3` (the default pass rate needs 2 of 3), then export → analyze → job summary.
+- **Staging agent:** a second agent in the `bk` project, deployed from the branch. It registers with an explicit `agent_name` (`bk-staging`, set via an env var so production stays unnamed and keeps auto-joining rooms). It therefore only receives explicit dispatches from simulations and never real customers. Check the LiveKit Cloud plan's agent limit first. Local runs remain possible on Linux/CI, where startup is fast.
   - The two paid jobs are skipped when secrets are absent (fork PRs).
 - **`agent-simulations.yml`**: nightly cron + `workflow_dispatch`.
   - Audio clean run and audio degraded run (`--background-noise --low-quality-microphone --packet-loss`), `--concurrency 5`.

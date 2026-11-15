@@ -33,10 +33,18 @@ Feature 6 only depends on the harness, so it can run in parallel with 2–5.
 
 ## 0. Housekeeping — `chore/restructure-repo`
 
-- [ ] Commit the pending doc/config fixes (README, scenarios, tests, simulations workflow, `render.yaml` move) and merge to `main`.
+- [x] Commit the pending doc/config fixes and merge to `main` (PRs #1, #2).
 - [ ] Remove the hard-coded fallback MCP address in `src/agent.py` (`http://65.0.71.171:8943/mcp`); fail loudly if `MCP_SERVER_URL` is unset.
 - [ ] Rename the package in `pyproject.toml` from `agent-starter-python` to `bk-voice-agent` and fix its description.
-- [ ] Upgrade the LiveKit CLI to **v2.19.4+** (installed: 2.18.7). Agent Simulations require 2.19.0+. Windows: `winget upgrade LiveKit.LiveKitCLI`.
+- [x] Upgrade the LiveKit CLI (now 2.19.3; simulations need 2.19.0+).
+
+## Bugs found by the harness
+
+Fix each on its own `fix/…` branch, with a scenario that reproduces it.
+
+- [ ] **Combo price in the wrong currency and scale** (production run `SR_AMDAose6mksx`): the ₹1,233 veg combo for 4 was quoted as "$12.33", twice. Fix: state the currency (INR, ₹) in the prompt and/or return a currency and a formatted price from `bk-menu-mcp`. Add a price-grounding check (feature 1, step 7).
+- [ ] **Invented combo contents:** `list_combos` returns `items: null`, and the agent described the contents without calling `get_combo`. Fix: tell the agent to call `get_combo` before describing a combo, or include items in `list_combos`.
+- [ ] **`get_item` / `get_combo` return `None` for an unknown ID**, which LiveKit reports as "tool completed without producing a result"; the order flow died on it (local run). Fix: return `{"error": "not found", ...}` from `bk-menu-mcp`.
 
 ## 1. Testing and regression checks — `feat/eval-harness`
 

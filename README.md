@@ -2,9 +2,11 @@
 
 ### *A voice-native drive-thru ordering agent that queries only what it needs*
 
-DriveThruAI is a multi-modal conversational AI system for Burger King drive-thru automation. It combines real-time audio streaming, speech-to-text, text-to-speech (with fallback), a read-only menu MCP server, and an experimental constraint-driven ordering brain — split across four subprojects, each owning one layer of the pipeline.
+DriveThruAI is a multi-modal conversational AI system for Burger King drive-thru automation. It combines real-time audio streaming, speech-to-text, text-to-speech (with fallback), a read-only menu MCP server, and an experimental constraint-driven ordering brain — split across three subprojects, each owning one layer of the pipeline.
 
-**Quick links:** [Subprojects](#subprojects) · [Architecture](#architecture) · [Getting Started](#getting-started) · [Environment Variables](#environment-variables) · [bk_neon Deep Dive](#bk_neon-constraint-driven-ordering-backend)
+**🎙️ Live demo: [bkvoiceagent.netlify.app](https://bkvoiceagent.netlify.app/)** — talk to the agent in your browser and place an order.
+
+**Quick links:** [Live demo](https://bkvoiceagent.netlify.app/) · [Subprojects](#subprojects) · [Architecture](#architecture) · [Getting Started](#getting-started) · [Environment Variables](#environment-variables) · [bk_neon Deep Dive](#bk_neon-constraint-driven-ordering-backend)
 
 ---
 
@@ -38,7 +40,7 @@ The repository is partitioned into distinct pieces, each targeting one layer of 
 
 | Subproject | Role |
 | --- | --- |
-| **`bk-menu-mcp`** | (Production, Render) A read-only MCP server (built on FastMCP) exposing Burger King menu items, categories, and combos as callable tools (`get_item`, `list_items`, `get_combo`, `search_items`). Deployable to Render. |
+| **`bk-menu-mcp`** | (Production, Render) A read-only MCP server (built on FastMCP) exposing Burger King menu items, categories, and combos as 10 callable tools: `list_categories`, `list_items`, `search_items`, `get_item`, `filter_items_by_price`, `filter_items_by_calories`, `get_high_protein_items`, `list_combos`, `get_combo`, `get_menu_stats`. Deployed via the root `render.yaml` Blueprint. |
 | **`bk-livekit-agent-cloud`** | The production LiveKit Cloud voice agent (`BKAgent`): room lifecycle, system prompt, `place_order` tool and menu tools via the MCP server. AssemblyAI STT -> Deepgram fallback, OpenRouter LLM -> Groq fallback, Cartesia TTS -> Deepgram Aura fallback, plus `PROVIDER_ALERT` monitoring. |
 | **`bk_neon`** | An experimental LangGraph state graph and Neon Postgres backend implementing constraint-driven, max-info-gain slot filling for order construction — the deep dive is [below](#bk_neon-constraint-driven-ordering-backend). |
 
@@ -54,20 +56,25 @@ flowchart TB
         Server["bk-menu-mcp<br/>(FastMCP, read-only)"]
     end
 
-    subgraph Brain["Experimental Ordering Brain"]
-        Graph["bk_neon<br/>(LangGraph + Neon Postgres + Redis)"]
+    subgraph Data["Data Layer"]
+        DB[("Neon Postgres<br/>(menu DB)")]
     end
 
+    subgraph Brain["Experimental Ordering Brain"]
+        Graph["bk_neon<br/>(LangGraph + arq/Redis worker)"]
+    end
+
+    Customer(["Customer (browser)<br/>bkvoiceagent.netlify.app"]) <-->|WebRTC audio + receipt| LK
     LK -->|MCPToolset, streamable HTTP| Server
-    PC -->|cached MCP tool calls| Server
-    Graph -.->|standalone, not yet wired to voice layer| Server
+    Server --> DB
+    Graph -.->|standalone, not yet wired to voice layer| DB
 ```
 
-The menu MCP server runs as an independent HTTP service that either voice agent queries as a tool source. `bk_neon` is developed as a separate, standalone ordering brain (see its [roadmap](#roadmap) item on wiring it into the live pipeline).
+The menu MCP server runs as an independent HTTP service that the voice agent queries as a tool source. `bk_neon` is developed as a separate, standalone ordering brain (see its [roadmap](#roadmap) item on wiring it into the live pipeline).
 
 ## Getting Started
 
-Each subproject manages its own dependencies with [`uv`](https://docs.astral.sh/uv/) and pins Python 3.12.
+`bk-menu-mcp` and `bk-livekit-agent-cloud` manage their dependencies with [`uv`](https://docs.astral.sh/uv/) on Python 3.12; `bk_neon` uses a plain `requirements.txt`.
 
 ### 1. Clone the repo
 
@@ -122,7 +129,8 @@ See the [bk_neon setup instructions](#bk_neon-constraint-driven-ordering-backend
 | `LIVEKIT_URL` | `bk-livekit-agent-cloud` | WebSocket endpoint, e.g. `ws://localhost:7880` |
 | `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` | `bk-livekit-agent-cloud` | `devkey` / `secret` in local dev |
 | `ASSEMBLYAI_API_KEY` | `bk-livekit-agent-cloud` | Streaming STT |
-| `GROQ_API_KEY` | `bk-livekit-agent-cloud` | LLM inference (e.g. Llama 3.3 70B) |
+| `OPENROUTER_API_KEY` | `bk-livekit-agent-cloud` | Primary LLM (`OPENROUTER_MODEL`, default `mistralai/mistral-nemo`) |
+| `GROQ_API_KEY` | `bk-livekit-agent-cloud` | Optional LLM fallback on a separate account (default `llama-3.3-70b-versatile`) |
 | `CARTESIA_API_KEY` / `CARTESIA_VOICE_ID` | `bk-livekit-agent-cloud` | Primary low-latency TTS |
 | `DEEPGRAM_API_KEY` / `DEEPGRAM_VOICE` | `bk-livekit-agent-cloud` | Fallback TTS (Aura) and STT fallback (nova-3) |
 | `MCP_SERVER_URL` | `bk-livekit-agent-cloud` | Must end in `/mcp` so the LiveKit MCP client uses streamable HTTP rather than SSE |
@@ -141,7 +149,7 @@ See the [bk_neon setup instructions](#bk_neon-constraint-driven-ordering-backend
 
 **2. Composite-key combos: veg / non-veg as first-class variants.** Every combo family (Classic, Value, Feast, Party) exists as two rows sharing one `id`, differentiated by `is_veg` — a genuine composite primary key `(id, is_veg)`. `combo_items` carries the matching composite foreign key, so a non-veg Feast Combo can never accidentally serve a veg-flagged burger — enforced at the schema level, not just in application code. Combos also scale by `num_people`, with item quantities and price generated programmatically from real item prices plus a bundle discount.
 
-**3. Redis caching layer.** The same Redis instance backing the job queue caches candidate-item/candidate-combo lookups. Cache keys are derived from a hash of the filled constraint slots, so different customers with the same constraints ("cheap non-veg combo") share a cache entry and skip the database entirely; admin-side price or availability updates invalidate the relevant keys rather than waiting out a TTL.
+**3. Redis caching layer (planned — not yet implemented).** The design: the same Redis instance backing the job queue caches candidate-item/candidate-combo lookups. Cache keys are derived from a hash of the filled constraint slots, so different customers with the same constraints ("cheap non-veg combo") share a cache entry and skip the database entirely; admin-side price or availability updates invalidate the relevant keys rather than waiting out a TTL.
 
 **4. Async everything.** Database access, ORM sessions, LangGraph nodes, and even Alembic migrations are async — `asyncpg` instead of `psycopg2`, `AsyncSession` instead of `Session`, `app.ainvoke()` instead of `app.invoke()`. Alembic's core migration runner is sync by design, so migrations bridge into the async engine via SQLAlchemy's `run_sync()` pattern.
 
@@ -156,7 +164,7 @@ See the [bk_neon setup instructions](#bk_neon-constraint-driven-ordering-backend
 | Migrations | Alembic (async) | Standard, autogenerate-capable, version-controlled schema |
 | Driver | `asyncpg` | Fastest async Postgres driver for Python |
 | Agent orchestration | LangGraph | Native interrupts, checkpointed state, conditional routing |
-| Cache + queue broker | Redis (Upstash) | One instance, two jobs: response caching and `arq`'s job queue |
+| Queue broker (+ planned cache) | Redis (Upstash) | `arq`'s job queue today; candidate-query caching planned on the same instance |
 | Background jobs | `arq` | Natively async, no sync/async bridging |
 | Voice I/O | LiveKit Agents | STT/TTS pipelines, barge-in, turn-taking |
 
@@ -206,7 +214,7 @@ erDiagram
     }
 ```
 
-`combos(id, is_veg)` and `combo_items(combo_id, combo_is_veg, item_id)` are genuine composite keys enforced by Postgres — see `test_schema.py` for the checks that prove it.
+`combos(id, is_veg)` and `combo_items(combo_id, combo_is_veg, item_id)` are genuine composite keys enforced by Postgres (see the Alembic migration in `alembic/versions/`).
 
 ### Project structure
 
@@ -217,11 +225,11 @@ bk_neon/
 ├── constraints.py       # slot schema for the ordering agent
 ├── info_gain.py         # max-info-gain question selector
 ├── query_builder.py     # async candidate-item/combo queries
-├── cache.py              # Redis cache-aside layer for candidate queries
 ├── agent_graph.py        # async LangGraph ordering state machine
 ├── seed.py               # idempotent async data seeding
 ├── worker.py              # arq background worker (order confirmation, price sync)
 ├── enqueue_test_job.py   # example: enqueue a job onto the worker
+├── tests.py              # manual read-only sanity checks against the DB
 ├── requirements.txt
 ├── alembic.ini
 └── alembic/
@@ -252,17 +260,13 @@ python enqueue_test_job.py    # optional: enqueue a test background job
 ### Testing
 
 ```bash
-python test_schema.py
+python tests.py                                        # built-in sanity checks
+python tests.py --sql "select count(*) from items"     # ad-hoc read-only SQL
 ```
 
-Runs the full pipeline against a throwaway database and checks, among other things:
+A manual, read-only script: row counts, sample rows, and a joined combo lookup against the database in `DATABASE_URL`. There is no automated test suite for `bk_neon` yet.
 
-- All expected tables/columns exist
-- The `(id, is_veg)` composite PK on `combos` is actually enforced (not just present)
-- Every generated combo has exactly one veg + one non-veg variant
-- No non-veg combo variant ever resolves to a veg-flagged item
-- Combo price strictly increases with `num_people`
-- Realistic query patterns (budget filters, protein filters, group orders) return sane results
+The voice agent's tests live in `bk-livekit-agent-cloud/tests/` (unit tests, run in CI) and `bk-livekit-agent-cloud/scenarios.yaml` (end-to-end simulations on LiveKit Cloud).
 
 ---
 
@@ -272,7 +276,7 @@ Runs the full pipeline against a throwaway database and checks, among other thin
 - [ ] Wire `present_options` to a live LLM call (currently a stub returning the candidate set)
 - [ ] Full cart/order-total tracking in `AgentState` so the graph loops through a full order instead of stopping after one query
 - [ ] Real order persistence (`orders` table) instead of the current stubbed `confirm_order` job
-- [ ] Cache invalidation hooks on item/price updates instead of TTL-only expiry
+- [ ] Redis caching of candidate queries, with invalidation hooks on item/price updates
 
 ## License
 

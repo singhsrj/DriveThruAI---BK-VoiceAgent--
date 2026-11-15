@@ -1,6 +1,6 @@
 # bk-livekit-agent-cloud
 
-The Burger King voice ordering agent, deployed to LiveKit Cloud.
+The Burger King voice ordering agent, deployed to LiveKit Cloud. Try it live at [bkvoiceagent.netlify.app](https://bkvoiceagent.netlify.app/).
 
 - **STT:** AssemblyAI -> Deepgram (fallback)
 - **LLM:** OpenRouter -> Groq (fallback)
